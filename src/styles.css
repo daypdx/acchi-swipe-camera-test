@@ -1367,11 +1367,6 @@ body.is-phone-runtime .controls {
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-body.is-phone-runtime.is-room-ready.is-pointer-role .controls,
-body.is-phone-runtime.is-camera-ready.is-looker-role .controls {
-  display: none;
-}
-
 body.is-phone-runtime .control-top {
   min-height: 48px;
   padding: 8px 10px;
