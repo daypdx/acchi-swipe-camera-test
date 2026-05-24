@@ -35,6 +35,7 @@ const state = {
     error: "",
     stream: null,
     landmarker: null,
+    handLandmarker: null,
     blazeModel: null,
     trackerLoading: false,
     blazeLoading: false,
@@ -51,8 +52,17 @@ const state = {
     dx: 0,
     dy: 0,
     seen: false,
+    handSeen: false,
+    handDirection: "center",
+    handConfidence: 0,
+    handDx: 0,
+    handDy: 0,
+    lastHandSeenAt: 0,
+    lastHandAt: 0,
     pendingDirection: "center",
     lockTimer: 0,
+    pointerPendingDirection: "center",
+    pointerLockTimer: 0,
   },
   online: {
     ws: null,
@@ -227,11 +237,11 @@ app.innerHTML = `
             <div class="camera-controls" data-panel="camera">
               <div class="camera-panel">
                 <header>
-                  <span class="role-pill">Looker</span>
+                  <span class="role-pill" data-camera-role-label>Camera</span>
                   <button class="camera-action" type="button" data-action="camera" title="Start camera">${icon("camera")}Start</button>
                 </header>
                 <div class="tracking-readout">
-                  <span class="tracking-label">Head</span>
+                  <span class="tracking-label" data-tracking-label>Camera</span>
                   <div class="tracking-direction" data-tracking-direction>${icon("face")}Center</div>
                   <div class="meter-grid">
                     <div class="meter"><span>X</span><div class="meter-track"><div class="meter-fill" data-meter="x"></div></div></div>
@@ -303,6 +313,8 @@ const els = {
   overlay: document.querySelector("[data-overlay]"),
   cameraEmpty: document.querySelector("[data-camera-empty]"),
   cameraButton: document.querySelector('[data-action="camera"]'),
+  cameraRoleLabel: document.querySelector("[data-camera-role-label]"),
+  trackingLabel: document.querySelector("[data-tracking-label]"),
   trackingDirection: document.querySelector("[data-tracking-direction]"),
   meterX: document.querySelector('[data-meter="x"]'),
   meterY: document.querySelector('[data-meter="y"]'),
@@ -406,12 +418,16 @@ function bindActions() {
 
   els.cameraButton.addEventListener("click", async () => {
     if (state.camera.ready) {
-      if (!state.camera.seen) {
-        toast("Find a face first.");
-        return;
+      if (activeCameraRole() === "looker") {
+        if (!state.camera.seen) {
+          toast("Find a face first.");
+          return;
+        }
+        calibrateCamera();
+        toast("Camera centered.");
+      } else {
+        toast("Show your pointing hand.");
       }
-      calibrateCamera();
-      toast("Camera centered.");
       render();
       return;
     }
@@ -957,6 +973,13 @@ async function startCamera() {
     state.camera.error = "";
     state.camera.trackerNote = "Loading tracker.";
     state.camera.baseline = null;
+    state.camera.seen = false;
+    state.camera.handSeen = false;
+    state.camera.direction = "center";
+    state.camera.handDirection = "center";
+    state.camera.lastSeenAt = 0;
+    state.camera.lastHandSeenAt = 0;
+    clearCameraLock();
     state.ui.menuOpen = false;
     trackCamera();
     render();
@@ -1001,13 +1024,13 @@ function loadCameraTrackers() {
 }
 
 async function loadMediaPipeTracker() {
-  if (state.camera.landmarker || state.camera.trackerLoading) return;
+  if ((state.camera.landmarker && state.camera.handLandmarker) || state.camera.trackerLoading) return;
   state.camera.trackerLoading = true;
-  state.camera.trackerNote = "Loading face tracker.";
+  state.camera.trackerNote = "Loading camera trackers.";
   render();
 
   try {
-    const { FaceLandmarker, FilesetResolver } = await import(
+    const { FaceLandmarker, FilesetResolver, HandLandmarker } = await import(
       `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
     );
 
@@ -1015,13 +1038,46 @@ async function loadMediaPipeTracker() {
       `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
     );
 
-    state.camera.landmarker = await createFaceLandmarker(FaceLandmarker, fileset);
-    state.camera.trackerNote = "Tracker ready.";
+    const [faceTracker, handTracker] = await Promise.all([
+      createFaceLandmarker(FaceLandmarker, fileset).catch(() => null),
+      createHandLandmarker(HandLandmarker, fileset).catch(() => null),
+    ]);
+
+    state.camera.landmarker = faceTracker;
+    state.camera.handLandmarker = handTracker;
+    if (!faceTracker && !handTracker) throw new Error("No camera trackers loaded");
+    state.camera.trackerNote =
+      handTracker && faceTracker
+        ? "Trackers ready."
+        : handTracker
+          ? "Hand tracker ready."
+          : "Face tracker ready. Swipe to point.";
   } catch {
     state.camera.trackerNote = state.camera.blazeModel ? "Backup tracker ready." : "Loading backup tracker.";
   } finally {
     state.camera.trackerLoading = false;
     render();
+  }
+}
+
+async function createHandLandmarker(HandLandmarker, fileset) {
+  const modelAssetPath =
+    "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task";
+  const options = {
+    runningMode: "VIDEO",
+    numHands: 1,
+  };
+
+  try {
+    return await HandLandmarker.createFromOptions(fileset, {
+      ...options,
+      baseOptions: { modelAssetPath, delegate: "GPU" },
+    });
+  } catch {
+    return HandLandmarker.createFromOptions(fileset, {
+      ...options,
+      baseOptions: { modelAssetPath, delegate: "CPU" },
+    });
   }
 }
 
@@ -1138,7 +1194,11 @@ function detectFace() {
   const now = performance.now();
   let tracked = false;
 
-  if (state.camera.landmarker) {
+  if (shouldTrackPointer()) {
+    detectHandPointing(video, now);
+  }
+
+  if (shouldTrackLooker() && state.camera.landmarker) {
     try {
       const result = state.camera.landmarker.detectForVideo(video, now);
       const landmarks = result.faceLandmarks?.[0];
@@ -1154,13 +1214,93 @@ function detectFace() {
     }
   }
 
-  const needsBackup = !tracked && state.camera.blazeModel && now - state.camera.lastLandmarkAt > 450;
+  const needsBackup =
+    shouldTrackLooker() && !tracked && state.camera.blazeModel && now - state.camera.lastLandmarkAt > 450;
   if (needsBackup) {
     runBlazeFaceTracker(video, now);
     return;
   }
 
-  if (!tracked) markFaceMissing(now);
+  if (shouldTrackLooker() && !tracked) markFaceMissing(now);
+}
+
+function detectHandPointing(video, now) {
+  if (!state.camera.handLandmarker) {
+    markHandMissing(now);
+    return;
+  }
+
+  try {
+    const result = state.camera.handLandmarker.detectForVideo(video, now);
+    const landmarks = result.landmarks?.[0];
+    if (!landmarks) {
+      markHandMissing(now);
+      return;
+    }
+    applyHandLandmarks(landmarks, now);
+  } catch {
+    state.camera.handLandmarker = null;
+    state.camera.trackerNote = "Hand tracker paused. Swipe still works.";
+    markHandMissing(now);
+  }
+}
+
+function applyHandLandmarks(landmarks, now) {
+  const wrist = landmarks[0];
+  const indexMcp = landmarks[5] || wrist;
+  const indexTip = landmarks[8];
+  const indexPip = landmarks[6] || indexMcp;
+
+  if (!wrist || !indexTip || !indexMcp) {
+    markHandMissing(now);
+    return;
+  }
+
+  const rawDx = indexTip.x - indexMcp.x;
+  const rawDy = indexTip.y - indexMcp.y;
+  const dx = -rawDx;
+  const dy = rawDy;
+  const reach = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
+  const fingerLength = Math.hypot(indexTip.x - indexMcp.x, indexTip.y - indexMcp.y);
+  const pipLength = Math.hypot(indexPip.x - indexMcp.x, indexPip.y - indexMcp.y);
+  const expressiveEnough = reach > 0.12 && fingerLength > pipLength * 0.82;
+  const threshold = 0.045;
+  let direction = "center";
+  let confidence = 0;
+
+  if (expressiveEnough && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+    direction = dx > 0 ? "right" : "left";
+    confidence = Math.min(1, Math.abs(dx) / 0.18);
+  } else if (expressiveEnough && Math.abs(dy) > threshold) {
+    direction = dy > 0 ? "down" : "up";
+    confidence = Math.min(1, Math.abs(dy) / 0.18);
+  }
+
+  state.camera.handSeen = true;
+  state.camera.lastHandSeenAt = now;
+  state.camera.lastHandAt = now;
+  state.camera.handDirection = direction;
+  state.camera.handConfidence = confidence;
+  state.camera.handDx = clamp(dx, -0.28, 0.28);
+  state.camera.handDy = clamp(dy, -0.28, 0.28);
+  if (shouldTrackPointer() && state.phase !== "reveal" && !state.online.submitted.pointer) {
+    state.choices.pointer = direction === "center" ? null : direction;
+  }
+  handleCameraDirection(direction, "pointer");
+  renderCameraReadout();
+}
+
+function markHandMissing(now) {
+  if (now - state.camera.lastHandSeenAt < 650) return;
+
+  state.camera.handSeen = false;
+  state.camera.handDirection = "center";
+  state.camera.handConfidence = 0;
+  if (shouldTrackPointer() && state.phase !== "reveal" && !state.online.submitted.pointer) {
+    state.choices.pointer = null;
+  }
+  handleCameraDirection("center", "pointer");
+  renderCameraReadout();
 }
 
 function applyMediaPipeLandmarks(landmarks) {
@@ -1271,11 +1411,13 @@ function applyFaceTracking({ x, y, width, height, mode }) {
   state.choices.looker = direction === "center" ? null : direction;
   updateAvatarMotion(direction, state.camera.dx, state.camera.dy);
   renderCameraReadout();
-  handleCameraDirection(direction);
+  handleCameraDirection(direction, "looker");
 }
 
-function hasCameraTracker() {
-  return Boolean(state.camera.landmarker || state.camera.blazeModel);
+function hasCameraTracker(role = activeCameraRole()) {
+  if (role === "pointer") return Boolean(state.camera.handLandmarker);
+  if (role === "looker") return Boolean(state.camera.landmarker || state.camera.blazeModel);
+  return Boolean(state.camera.handLandmarker || state.camera.landmarker || state.camera.blazeModel);
 }
 
 function updateAvatarMotion(direction, dx, dy) {
@@ -1319,56 +1461,72 @@ function drawFaceOverlay(landmarks) {
   });
 }
 
-function handleCameraDirection(direction) {
+function handleCameraDirection(direction, role = "looker") {
   if (direction === "center" || state.phase === "reveal") {
-    clearCameraLock();
+    clearCameraLock(role);
     return;
   }
 
-  if (!shouldCameraSubmit()) return;
-  if (state.camera.pendingDirection === direction && state.camera.lockTimer) return;
+  if (!shouldCameraSubmit(role)) return;
+  const pendingKey = role === "pointer" ? "pointerPendingDirection" : "pendingDirection";
+  const timerKey = role === "pointer" ? "pointerLockTimer" : "lockTimer";
+  if (state.camera[pendingKey] === direction && state.camera[timerKey]) return;
 
-  clearCameraLock();
-  state.camera.pendingDirection = direction;
-  state.camera.lockTimer = window.setTimeout(() => {
-    if (state.camera.direction !== direction || !shouldCameraSubmit()) return;
-    submitCameraDirection(direction);
-    clearCameraLock();
+  clearCameraLock(role);
+  state.camera[pendingKey] = direction;
+  state.camera[timerKey] = window.setTimeout(() => {
+    const currentDirection = role === "pointer" ? state.camera.handDirection : state.camera.direction;
+    if (currentDirection !== direction) return;
+    if (!shouldCameraSubmit(role)) return;
+    submitCameraDirection(direction, role);
+    clearCameraLock(role);
   }, 420);
 }
 
-function shouldCameraSubmit() {
+function shouldCameraSubmit(role = "looker") {
   if (!isPhoneRuntime()) return false;
-  if (!state.camera.ready || !state.camera.seen) return false;
+  if (!state.camera.ready) return false;
+  if (role === "looker" && !state.camera.seen) return false;
+  if (role === "pointer" && !state.camera.handSeen) return false;
   if (state.mode === "online") {
     return (
       state.online.ready &&
-      state.online.role === "looker" &&
-      !state.online.submitted.looker
+      state.online.role === role &&
+      !state.online.submitted[role]
     );
   }
   if (state.mode === "ai") {
-    return state.ai.humanRole === "looker" && !state.ai.thinking;
+    return state.ai.humanRole === role && !state.ai.thinking;
   }
   return false;
 }
 
-function submitCameraDirection(direction) {
+function submitCameraDirection(direction, role = "looker") {
   if (state.mode === "online") {
-    state.choices.looker = direction;
-    state.online.submitted.looker = true;
+    state.choices[role] = direction;
+    state.online.submitted[role] = true;
     sendOnline({ type: "submit", direction });
     render();
   }
-  if (state.mode === "ai") {
+  if (state.mode === "ai" && role === "looker") {
     playAiLookRound(direction);
+  }
+  if (state.mode === "ai" && role === "pointer") {
+    playAiRound(direction);
   }
 }
 
-function clearCameraLock() {
-  window.clearTimeout(state.camera.lockTimer);
-  state.camera.lockTimer = 0;
-  state.camera.pendingDirection = "center";
+function clearCameraLock(role = "all") {
+  if (role === "looker" || role === "all") {
+    window.clearTimeout(state.camera.lockTimer);
+    state.camera.lockTimer = 0;
+    state.camera.pendingDirection = "center";
+  }
+  if (role === "pointer" || role === "all") {
+    window.clearTimeout(state.camera.pointerLockTimer);
+    state.camera.pointerLockTimer = 0;
+    state.camera.pointerPendingDirection = "center";
+  }
 }
 
 function render() {
@@ -1439,9 +1597,28 @@ function updateRuntimeClasses() {
 }
 
 function shouldShowCameraPanel() {
+  return Boolean(activeCameraRole());
+}
+
+function activeCameraRole() {
+  if (state.mode === "online") return state.online.role;
+  if (state.mode === "ai") return state.ai.humanRole;
+  return null;
+}
+
+function shouldTrackLooker() {
   return (
-    (state.mode === "online" && state.online.role === "looker") ||
-    (state.mode === "ai" && state.ai.humanRole === "looker")
+    state.camera.ready &&
+    ((state.mode === "online" && state.online.role === "looker") ||
+      (state.mode === "ai" && state.ai.humanRole === "looker"))
+  );
+}
+
+function shouldTrackPointer() {
+  return (
+    state.camera.ready &&
+    ((state.mode === "online" && state.online.ready && state.online.role === "pointer") ||
+      (state.mode === "ai" && state.ai.humanRole === "pointer"))
   );
 }
 
@@ -1457,11 +1634,11 @@ function shouldShowPhoneControls() {
 
   if (state.mode === "online") {
     if (!state.online.roomCode || !state.online.ready || !state.online.role) return true;
-    return state.online.role === "looker" && !state.camera.ready;
+    return !state.camera.ready;
   }
 
   if (state.mode === "ai") {
-    return state.ai.humanRole === "looker" && !state.camera.ready;
+    return !state.camera.ready;
   }
 
   return true;
@@ -1485,8 +1662,8 @@ function modeKicker() {
 
 function modeControlTitle() {
   if (state.mode === "camera") return "Swipe against the camera";
-  if (state.mode === "online") return state.online.role === "looker" ? "Turn your head on camera" : "Swipe anywhere to point";
-  if (state.mode === "ai") return state.ai.humanRole === "pointer" ? "Swipe anywhere to point" : "Turn your head on camera";
+  if (state.mode === "online") return state.online.role === "looker" ? "Turn your head on camera" : "Point on camera or swipe";
+  if (state.mode === "ai") return state.ai.humanRole === "pointer" ? "Point on camera or swipe" : "Turn your head on camera";
   return "Two swipes decide the round";
 }
 
@@ -1501,18 +1678,30 @@ function modeTitle() {
     if (!state.online.connected) return "Make a room.";
     if (!state.online.roomCode) return "Create or join.";
     if (!state.online.ready) return "Waiting for player two.";
-    if (state.online.role === "looker" && !state.camera.ready) return "Start your camera.";
-    if (state.online.role === "looker" && !hasCameraTracker()) return state.camera.trackerNote || "Loading tracker.";
+    if (!state.camera.ready) return "Start your camera.";
+    if (state.online.role === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
+    if (state.online.role === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
+    if (state.online.role === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
     if (state.online.role === "looker" && !state.camera.seen) return "Find your face.";
     if (state.online.submitted[state.online.role]) return "Locked in.";
-    return state.online.role === "looker" ? "Look away." : "Swipe to point.";
+    return state.online.role === "looker"
+      ? "Look away."
+      : state.camera.handDirection === "center"
+        ? "Point up, down, left, or right."
+        : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`;
   }
   if (state.mode === "ai") {
     if (state.ai.thinking) return "Computer thinking.";
-    if (state.ai.humanRole === "looker" && !state.camera.ready) return "Start your camera.";
-    if (state.ai.humanRole === "looker" && !hasCameraTracker()) return state.camera.trackerNote || "Loading tracker.";
+    if (!state.camera.ready) return "Start your camera.";
+    if (state.ai.humanRole === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
+    if (state.ai.humanRole === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
+    if (state.ai.humanRole === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
     if (state.ai.humanRole === "looker" && !state.camera.seen) return "Find your face.";
-    return state.ai.humanRole === "pointer" ? "Swipe to point." : "Look away.";
+    return state.ai.humanRole === "pointer"
+      ? state.camera.handDirection === "center"
+        ? "Point up, down, left, or right."
+        : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`
+      : "Look away.";
   }
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
   if (!state.choices.pointer && state.choices.looker) return "Pointer turn.";
@@ -1546,9 +1735,10 @@ function renderOnline() {
 function onlineChoiceState() {
   if (!state.online.roomCode) return "Join a room";
   if (!state.online.ready) return "Need player two";
+  if (!state.camera.ready) return "Start camera";
   if (state.online.submitted[state.online.role]) return "Locked";
   if (state.online.role === "looker") return "Use camera";
-  return "Pick a direction";
+  return "Point on camera";
 }
 
 function updateSlot(el, occupied, isYou) {
@@ -1568,7 +1758,13 @@ function renderAi() {
   els.aiOpponentLabel.textContent = `CPU ${roleVerb(computerRole)}`;
   els.aiPadRole.textContent = `You ${roleVerb(state.ai.humanRole)}`;
   els.aiChoiceState.textContent =
-    state.ai.humanRole === "looker" ? "Use camera" : state.ai.thinking ? "CPU thinking" : "Swipe anywhere";
+    !state.camera.ready
+      ? "Start camera"
+      : state.ai.humanRole === "looker"
+        ? "Use camera"
+        : state.ai.thinking
+          ? "CPU thinking"
+          : "Point on camera";
   els.aiPlayer.classList.toggle("is-hidden", state.ai.humanRole === "looker");
 }
 
@@ -1614,25 +1810,41 @@ function renderRounds() {
 function renderCameraReadout() {
   if (!els.trackingDirection) return;
 
+  const role = activeCameraRole();
   if (state.phase !== "reveal") els.title.textContent = modeTitle();
   els.cameraEmpty.style.display = state.camera.ready ? "none" : "grid";
   els.cameraButton.disabled = state.camera.loading;
   els.cameraButton.innerHTML = state.camera.loading
     ? `${icon("loader")}Loading`
     : state.camera.ready
-      ? `${icon("crosshair")}Center`
+      ? role === "looker"
+        ? `${icon("crosshair")}Center`
+        : `${icon("camera")}Ready`
       : `${icon("camera")}Start`;
 
-  const direction = state.camera.seen ? state.camera.direction : "none";
+  if (els.cameraRoleLabel) els.cameraRoleLabel.textContent = role === "pointer" ? "Pointer" : "Looker";
+  if (els.trackingLabel) els.trackingLabel.textContent = role === "pointer" ? "Hand" : "Head";
+
+  const direction =
+    role === "pointer"
+      ? state.camera.handSeen
+        ? state.camera.handDirection
+        : "none"
+      : state.camera.seen
+        ? state.camera.direction
+        : "none";
   const label =
     state.camera.error ||
-    (!hasCameraTracker() && state.camera.ready ? state.camera.trackerNote || "Loading tracker" : "") ||
-    (state.camera.seen && state.camera.trackingMode
+    (!hasCameraTracker(role) && state.camera.ready ? state.camera.trackerNote || "Loading tracker" : "") ||
+    (role === "pointer" && state.camera.handSeen
+      ? `${DIRECTION_LABELS[direction]} (Hand)`
+      : "") ||
+    (role === "looker" && state.camera.seen && state.camera.trackingMode
       ? `${DIRECTION_LABELS[direction]} (${state.camera.trackingMode})`
       : DIRECTION_LABELS[direction]);
-  els.trackingDirection.innerHTML = `${directionIcon(direction) || icon("face")}${label}`;
-  setMeter(els.meterX, state.camera.dx);
-  setMeter(els.meterY, state.camera.dy);
+  els.trackingDirection.innerHTML = `${directionIcon(direction) || icon(role === "pointer" ? "pointer" : "face")}${label}`;
+  setMeter(els.meterX, role === "pointer" ? state.camera.handDx : state.camera.dx);
+  setMeter(els.meterY, role === "pointer" ? state.camera.handDy : state.camera.dy);
 }
 
 function setMeter(el, value) {
