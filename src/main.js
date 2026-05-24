@@ -2147,11 +2147,6 @@ function faceAsset() {
           <stop offset="42%" stop-color="#15100e"></stop>
           <stop offset="100%" stop-color="#050505"></stop>
         </linearGradient>
-        <radialGradient id="avatarBeard" cx="50%" cy="34%" r="76%">
-          <stop offset="0%" stop-color="#211512"></stop>
-          <stop offset="60%" stop-color="#100d0c"></stop>
-          <stop offset="100%" stop-color="#050505"></stop>
-        </radialGradient>
         <linearGradient id="avatarShirt" x1="91" x2="303" y1="315" y2="400" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stop-color="#d8dce0"></stop>
           <stop offset="58%" stop-color="#a5adb2"></stop>
@@ -2169,10 +2164,6 @@ function faceAsset() {
         <pattern id="hairDot" width="13" height="13" patternUnits="userSpaceOnUse">
           <circle cx="4" cy="5" r="2.2" fill="#2a1b16" opacity="0.65"></circle>
           <circle cx="10" cy="10" r="1.7" fill="#060606" opacity="0.78"></circle>
-        </pattern>
-        <pattern id="beardDot" width="12" height="12" patternUnits="userSpaceOnUse">
-          <circle cx="3" cy="4" r="1.35" fill="#2d201b" opacity="0.7"></circle>
-          <circle cx="9" cy="8" r="1.1" fill="#000" opacity="0.62"></circle>
         </pattern>
         <linearGradient id="toothShade" x1="160" x2="244" y1="278" y2="306" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stop-color="#fffaf2"></stop>
@@ -2201,8 +2192,6 @@ function faceAsset() {
         <path class="face-hair" d="M65 156c-7-48 8-86 45-112 33-23 78-31 129-22 51 9 85 34 97 72 7 23 3 51-12 83-34-23-75-31-124-24-50 7-96 1-135 3Z"></path>
         <path class="face-hair-texture" d="M65 156c-7-48 8-86 45-112 33-23 78-31 129-22 51 9 85 34 97 72 7 23 3 51-12 83-34-23-75-31-124-24-50 7-96 1-135 3Z"></path>
         <path class="face-hairline" d="M82 160c31-23 74-22 122-19 47 3 85-3 120 36-36-17-79-19-125-12-49 8-88 1-117-5Z"></path>
-        <path class="face-sideburn" d="M82 177c15 5 25 27 27 59 2 38 15 71 39 100-36-18-59-50-68-95-5-27-4-48 2-64Z"></path>
-        <path class="face-sideburn is-right" d="M318 177c-15 5-25 27-27 59-2 38-15 71-39 100 36-18 59-50 68-95 5-27 4-48-2-64Z"></path>
         <g class="face-look">
           <path class="face-forehead-line" d="M158 123c25-6 57-6 83 1"></path>
           <path class="face-forehead-line is-small" d="M169 138c20-5 43-5 63 0"></path>
@@ -2224,10 +2213,7 @@ function faceAsset() {
           <path class="face-nose-shine" d="M204 213c-10 18-12 33-6 43"></path>
           <path class="face-nostril" d="M180 255c10 7 21 6 28 0"></path>
           <path class="face-nostril" d="M218 255c10 5 19 3 25-5"></path>
-          <path class="face-beard" d="M98 232c12 70 48 110 102 110s90-40 102-110c-16 37-47 57-102 57s-86-20-102-57Z"></path>
-          <path class="face-beard-texture" d="M98 232c12 70 48 110 102 110s90-40 102-110c-16 37-47 57-102 57s-86-20-102-57Z"></path>
-          <path class="face-beard-light" d="M138 296c35 28 91 28 126-1"></path>
-          <path class="face-mustache" d="M145 263c27-16 45-13 56 5 13-18 32-20 57-5"></path>
+          <path class="face-chin-shadow" d="M137 296c35 25 91 25 126-1"></path>
           <path class="face-smile-fill" d="M136 270c22 47 105 48 129 0-34 16-91 16-129 0Z"></path>
           <g clip-path="url(#smileClip)">
             <path class="face-teeth" d="M151 277c27 22 70 23 96 0-8 29-25 40-48 40-24 0-41-12-48-40Z"></path>

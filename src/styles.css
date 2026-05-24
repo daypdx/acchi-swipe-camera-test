@@ -439,7 +439,6 @@ body.is-swiping .swipe-analog {
 .face-hair-texture,
 .face-hairline,
 .face-curl,
-.face-sideburn,
 .face-cheek,
 .face-cheek-glow,
 .face-side-shadow,
@@ -448,10 +447,7 @@ body.is-swiping .swipe-analog {
 .face-durag,
 .face-durag-fold,
 .face-durag-tail,
-.face-beard,
-.face-beard-texture,
-.face-beard-light,
-.face-mustache,
+.face-chin-shadow,
 .face-smile-fill,
 .face-teeth,
 .face-tooth-line,
@@ -546,15 +542,6 @@ body.is-swiping .swipe-analog {
   stroke-width: 5;
 }
 
-.face-sideburn {
-  fill: #0b0908;
-  stroke-width: 0;
-}
-
-.face-sideburn.is-right {
-  opacity: 0.94;
-}
-
 .face-cheek {
   fill: none;
   stroke: #d08a5a;
@@ -607,28 +594,11 @@ body.is-swiping .swipe-analog {
   stroke-width: 6;
 }
 
-.face-beard {
-  fill: url("#avatarBeard");
-  stroke-width: 4;
-}
-
-.face-beard-texture {
-  fill: url("#beardDot");
-  opacity: 0.55;
-  stroke-width: 0;
-}
-
-.face-beard-light {
+.face-chin-shadow {
   fill: none;
-  stroke: #2b201d;
-  stroke-width: 6;
-  opacity: 0.58;
-}
-
-.face-mustache {
-  fill: none;
-  stroke: #0b0908;
-  stroke-width: 10;
+  stroke: #7c4630;
+  stroke-width: 5;
+  opacity: 0.32;
 }
 
 .face-eye-white {
