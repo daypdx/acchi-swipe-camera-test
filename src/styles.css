@@ -1065,6 +1065,23 @@ body.is-swiping .swipe-analog {
   pointer-events: none;
 }
 
+.camera-rig {
+  position: fixed;
+  left: -220px;
+  top: 0;
+  z-index: 0;
+  width: 192px;
+  height: 144px;
+  min-height: 144px;
+  opacity: 0.01;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.camera-rig .camera-empty {
+  display: none;
+}
+
 .camera-empty {
   position: relative;
   z-index: 2;
@@ -1952,6 +1969,19 @@ body.is-phone-runtime .ai-options {
 body.is-phone-runtime .share-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.is-phone-runtime .camera-rig {
+  position: fixed;
+  left: -220px;
+  top: 0;
+  z-index: 0;
+  width: 192px;
+  height: 144px;
+  min-height: 144px;
+  opacity: 0.01;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .log {

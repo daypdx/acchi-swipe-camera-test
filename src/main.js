@@ -35,6 +35,15 @@ const state = {
     error: "",
     stream: null,
     landmarker: null,
+    blazeModel: null,
+    trackerLoading: false,
+    blazeLoading: false,
+    trackerNote: "",
+    trackingMode: "",
+    lastSeenAt: 0,
+    lastLandmarkAt: 0,
+    lastBlazeAt: 0,
+    blazeRunning: false,
     rafId: 0,
     baseline: null,
     direction: "center",
@@ -216,13 +225,6 @@ app.innerHTML = `
             </div>
 
             <div class="camera-controls" data-panel="camera">
-              <div class="video-shell">
-                <video autoplay playsinline muted data-video></video>
-                <canvas data-overlay></canvas>
-                <div class="camera-empty" data-camera-empty aria-hidden="true">
-                  ${cameraAsset()}
-                </div>
-              </div>
               <div class="camera-panel">
                 <header>
                   <span class="role-pill">Looker</span>
@@ -254,6 +256,13 @@ app.innerHTML = `
         <div class="rounds" data-rounds aria-label="Recent rounds"></div>
       </aside>
     </section>
+    <div class="video-shell camera-rig" aria-hidden="true">
+      <video autoplay playsinline muted data-video></video>
+      <canvas data-overlay></canvas>
+      <div class="camera-empty" data-camera-empty aria-hidden="true">
+        ${cameraAsset()}
+      </div>
+    </div>
     <div class="swipe-analog" data-swipe-analog aria-hidden="true">
       <span class="swipe-analog-ring"></span>
       <span class="swipe-analog-thumb"></span>
@@ -938,24 +947,20 @@ async function startCamera() {
     });
 
     els.video.srcObject = stream;
+    els.video.muted = true;
+    els.video.playsInline = true;
     await els.video.play();
+    await waitForVideoFrame(els.video);
     state.camera.stream = stream;
-
-    const { FaceLandmarker, FilesetResolver } = await import(
-      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
-    );
-
-    const fileset = await FilesetResolver.forVisionTasks(
-      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
-    );
-
-    state.camera.landmarker = await createFaceLandmarker(FaceLandmarker, fileset);
-
     state.camera.ready = true;
     state.camera.loading = false;
+    state.camera.error = "";
+    state.camera.trackerNote = "Loading tracker.";
+    state.camera.baseline = null;
     state.ui.menuOpen = false;
-    calibrateCamera();
     trackCamera();
+    render();
+    loadCameraTrackers();
   } catch (error) {
     stopCameraStream();
     state.camera.loading = false;
@@ -966,10 +971,110 @@ async function startCamera() {
   render();
 }
 
+function waitForVideoFrame(video) {
+  if (video.readyState >= 2 && video.videoWidth && video.videoHeight) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      video.removeEventListener("loadedmetadata", done);
+      video.removeEventListener("canplay", done);
+      resolve();
+    };
+    video.addEventListener("loadedmetadata", done, { once: true });
+    video.addEventListener("canplay", done, { once: true });
+    window.setTimeout(done, 1200);
+  });
+}
+
 function stopCameraStream() {
   state.camera.stream?.getTracks().forEach((track) => track.stop());
   state.camera.stream = null;
   els.video.srcObject = null;
+}
+
+function loadCameraTrackers() {
+  loadMediaPipeTracker();
+  loadBlazeFaceTracker();
+}
+
+async function loadMediaPipeTracker() {
+  if (state.camera.landmarker || state.camera.trackerLoading) return;
+  state.camera.trackerLoading = true;
+  state.camera.trackerNote = "Loading face tracker.";
+  render();
+
+  try {
+    const { FaceLandmarker, FilesetResolver } = await import(
+      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
+    );
+
+    const fileset = await FilesetResolver.forVisionTasks(
+      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
+    );
+
+    state.camera.landmarker = await createFaceLandmarker(FaceLandmarker, fileset);
+    state.camera.trackerNote = "Tracker ready.";
+  } catch {
+    state.camera.trackerNote = state.camera.blazeModel ? "Backup tracker ready." : "Loading backup tracker.";
+  } finally {
+    state.camera.trackerLoading = false;
+    render();
+  }
+}
+
+async function loadBlazeFaceTracker() {
+  if (state.camera.blazeModel || state.camera.blazeLoading) return;
+  state.camera.blazeLoading = true;
+
+  try {
+    await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js", "tfjs");
+    if (window.tf) {
+      await window.tf.setBackend("webgl").catch(() => window.tf.setBackend("cpu"));
+      await window.tf.ready();
+    }
+    await loadScript(
+      "https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js",
+      "blazeface",
+    );
+    state.camera.blazeModel = await window.blazeface.load();
+    if (!state.camera.landmarker) state.camera.trackerNote = "Backup tracker ready.";
+  } catch {
+    if (!state.camera.landmarker) state.camera.trackerNote = "Face tracker did not load.";
+  } finally {
+    state.camera.blazeLoading = false;
+    render();
+  }
+}
+
+function loadScript(src, id) {
+  const existing = document.querySelector(`script[data-loader-id="${id}"]`);
+  if (existing) {
+    if (existing.dataset.loaded === "true") return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", reject, { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.loaderId = id;
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        resolve();
+      },
+      { once: true },
+    );
+    script.addEventListener("error", reject, { once: true });
+    document.head.append(script);
+  });
 }
 
 async function createFaceLandmarker(FaceLandmarker, fileset) {
@@ -1028,37 +1133,123 @@ function trackCamera() {
 
 function detectFace() {
   const video = els.video;
-  if (!state.camera.landmarker || video.readyState < 2) return;
+  if (video.readyState < 2) return;
 
-  const result = state.camera.landmarker.detectForVideo(video, performance.now());
-  const landmarks = result.faceLandmarks?.[0];
-  drawFaceOverlay(landmarks);
+  const now = performance.now();
+  let tracked = false;
 
-  if (!landmarks) {
-    state.camera.seen = false;
-    state.camera.direction = "center";
-    state.camera.confidence = 0;
-    updateAvatarMotion("center", 0, 0);
-    renderCameraReadout();
+  if (state.camera.landmarker) {
+    try {
+      const result = state.camera.landmarker.detectForVideo(video, now);
+      const landmarks = result.faceLandmarks?.[0];
+      drawFaceOverlay(landmarks);
+      if (landmarks) {
+        applyMediaPipeLandmarks(landmarks);
+        state.camera.lastLandmarkAt = now;
+        tracked = true;
+      }
+    } catch {
+      state.camera.landmarker = null;
+      state.camera.trackerNote = state.camera.blazeModel ? "Backup tracker ready." : "Loading backup tracker.";
+    }
+  }
+
+  const needsBackup = !tracked && state.camera.blazeModel && now - state.camera.lastLandmarkAt > 450;
+  if (needsBackup) {
+    runBlazeFaceTracker(video, now);
     return;
   }
 
+  if (!tracked) markFaceMissing(now);
+}
+
+function applyMediaPipeLandmarks(landmarks) {
   const nose = landmarks[1] || landmarks[4];
   const left = landmarks[454] || landmarks[356];
   const right = landmarks[234] || landmarks[127];
   const top = landmarks[10] || landmarks[151];
   const bottom = landmarks[152] || landmarks[199];
 
-  state.camera.noseX = nose.x;
-  state.camera.noseY = nose.y;
-  state.camera.faceWidth = Math.max(0.001, Math.abs(left.x - right.x));
-  state.camera.faceHeight = Math.max(0.001, Math.abs(bottom.y - top.y));
+  if (!nose || !left || !right || !top || !bottom) {
+    markFaceMissing(performance.now());
+    return;
+  }
+
+  applyFaceTracking({
+    x: nose.x,
+    y: nose.y,
+    width: Math.max(0.001, Math.abs(left.x - right.x)),
+    height: Math.max(0.001, Math.abs(bottom.y - top.y)),
+    mode: "Face",
+  });
+}
+
+function runBlazeFaceTracker(video, now) {
+  if (state.camera.blazeRunning || now - state.camera.lastBlazeAt < 110) return;
+
+  state.camera.blazeRunning = true;
+  state.camera.lastBlazeAt = now;
+  state.camera.blazeModel
+    .estimateFaces(video, false)
+    .then((predictions) => {
+      const face = predictions?.[0];
+      if (!face) {
+        markFaceMissing(performance.now());
+        return;
+      }
+
+      const width = video.videoWidth || 1;
+      const height = video.videoHeight || 1;
+      const topLeft = face.topLeft || [0, 0];
+      const bottomRight = face.bottomRight || [width, height];
+      const nose = face.landmarks?.[2] || [
+        (topLeft[0] + bottomRight[0]) / 2,
+        (topLeft[1] + bottomRight[1]) / 2,
+      ];
+
+      applyFaceTracking({
+        x: nose[0] / width,
+        y: nose[1] / height,
+        width: Math.max(0.001, (bottomRight[0] - topLeft[0]) / width),
+        height: Math.max(0.001, (bottomRight[1] - topLeft[1]) / height),
+        mode: "Backup",
+      });
+    })
+    .catch(() => {
+      state.camera.trackerNote = state.camera.landmarker ? "Tracker ready." : "Backup tracker paused.";
+    })
+    .finally(() => {
+      state.camera.blazeRunning = false;
+      renderCameraReadout();
+    });
+}
+
+function markFaceMissing(now) {
+  if (!hasCameraTracker()) return;
+  if (now - state.camera.lastSeenAt < 750) return;
+
+  state.camera.seen = false;
+  state.camera.direction = "center";
+  state.camera.confidence = 0;
+  state.camera.trackingMode = "";
+  updateAvatarMotion("center", 0, 0);
+  renderCameraReadout();
+}
+
+function applyFaceTracking({ x, y, width, height, mode }) {
+  state.camera.noseX = x;
+  state.camera.noseY = y;
+  state.camera.faceWidth = width;
+  state.camera.faceHeight = height;
   state.camera.seen = true;
+  state.camera.lastSeenAt = performance.now();
+  state.camera.trackingMode = mode;
+  state.camera.trackerNote = `${mode} tracking.`;
 
   if (!state.camera.baseline) calibrateCamera();
 
-  const dxRaw = (nose.x - state.camera.baseline.x) / state.camera.baseline.width;
-  const dyRaw = (nose.y - state.camera.baseline.y) / state.camera.baseline.height;
+  const dxRaw = (x - state.camera.baseline.x) / state.camera.baseline.width;
+  const dyRaw = (y - state.camera.baseline.y) / state.camera.baseline.height;
   const dx = -dxRaw;
   const dy = dyRaw;
   const threshold = 0.07;
@@ -1081,6 +1272,10 @@ function detectFace() {
   updateAvatarMotion(direction, state.camera.dx, state.camera.dy);
   renderCameraReadout();
   handleCameraDirection(direction);
+}
+
+function hasCameraTracker() {
+  return Boolean(state.camera.landmarker || state.camera.blazeModel);
 }
 
 function updateAvatarMotion(direction, dx, dy) {
@@ -1307,12 +1502,16 @@ function modeTitle() {
     if (!state.online.roomCode) return "Create or join.";
     if (!state.online.ready) return "Waiting for player two.";
     if (state.online.role === "looker" && !state.camera.ready) return "Start your camera.";
+    if (state.online.role === "looker" && !hasCameraTracker()) return state.camera.trackerNote || "Loading tracker.";
+    if (state.online.role === "looker" && !state.camera.seen) return "Find your face.";
     if (state.online.submitted[state.online.role]) return "Locked in.";
     return state.online.role === "looker" ? "Look away." : "Swipe to point.";
   }
   if (state.mode === "ai") {
     if (state.ai.thinking) return "Computer thinking.";
     if (state.ai.humanRole === "looker" && !state.camera.ready) return "Start your camera.";
+    if (state.ai.humanRole === "looker" && !hasCameraTracker()) return state.camera.trackerNote || "Loading tracker.";
+    if (state.ai.humanRole === "looker" && !state.camera.seen) return "Find your face.";
     return state.ai.humanRole === "pointer" ? "Swipe to point." : "Look away.";
   }
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
@@ -1415,6 +1614,7 @@ function renderRounds() {
 function renderCameraReadout() {
   if (!els.trackingDirection) return;
 
+  if (state.phase !== "reveal") els.title.textContent = modeTitle();
   els.cameraEmpty.style.display = state.camera.ready ? "none" : "grid";
   els.cameraButton.disabled = state.camera.loading;
   els.cameraButton.innerHTML = state.camera.loading
@@ -1424,7 +1624,12 @@ function renderCameraReadout() {
       : `${icon("camera")}Start`;
 
   const direction = state.camera.seen ? state.camera.direction : "none";
-  const label = state.camera.error || DIRECTION_LABELS[direction];
+  const label =
+    state.camera.error ||
+    (!hasCameraTracker() && state.camera.ready ? state.camera.trackerNote || "Loading tracker" : "") ||
+    (state.camera.seen && state.camera.trackingMode
+      ? `${DIRECTION_LABELS[direction]} (${state.camera.trackingMode})`
+      : DIRECTION_LABELS[direction]);
   els.trackingDirection.innerHTML = `${directionIcon(direction) || icon("face")}${label}`;
   setMeter(els.meterX, state.camera.dx);
   setMeter(els.meterY, state.camera.dy);
