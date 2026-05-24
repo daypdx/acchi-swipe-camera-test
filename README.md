@@ -1,4 +1,4 @@
-# Acchi Swipe Camera Test
+# JitSwipe Camera Test
 
 Phone-first Acchi Muite Hoi-style prototype.
 

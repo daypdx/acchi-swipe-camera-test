@@ -77,7 +77,7 @@ wss.on("connection", (ws) => {
 server.listen(port, "0.0.0.0", async () => {
   const urls = localUrls(port, useHttps ? "https" : "http");
   const hasDist = existsSync(distDir) && (await readdir(distDir).catch(() => [])).length > 0;
-  console.log(`Acchi Swipe room server listening on port ${port}`);
+  console.log(`JitSwipe room server listening on port ${port}`);
   if (useHttps) console.log("Using local HTTPS for phone camera permission. Accept the certificate warning on each phone.");
   if (!hasDist) console.log("No dist build found yet. Run npm run build first.");
   urls.forEach((url) => console.log(`  ${url}`));
@@ -90,7 +90,7 @@ async function createCertificate() {
     ...localAddresses().map((ip) => ({ type: 7, ip })),
   ];
   const pems = await selfsigned.generate(
-    [{ name: "commonName", value: "Acchi Swipe Local" }],
+    [{ name: "commonName", value: "JitSwipe Local" }],
     {
       algorithm: "sha256",
       days: 30,
