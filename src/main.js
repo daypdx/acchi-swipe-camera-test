@@ -106,7 +106,10 @@ app.innerHTML = `
     <header class="topbar">
       <div class="brand" aria-label="JitSwipe">
         <span class="brand-mark" aria-hidden="true">${icon("spark")}</span>
-        <h1>JitSwipe</h1>
+        <div class="brand-copy">
+          <h1>JitSwipe</h1>
+          <p>The reaction game for people who know.</p>
+        </div>
       </div>
       <div class="mode-tabs" role="tablist" aria-label="Mode">
         <button type="button" data-mode="online" role="tab" aria-selected="true">${icon("phone")}Phone Room</button>

@@ -1,5 +1,7 @@
 # JitSwipe Camera Test
 
+The reaction game for people who know.
+
 Phone-first Acchi Muite Hoi-style prototype.
 
 ## Camera Test

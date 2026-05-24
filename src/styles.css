@@ -205,9 +205,23 @@ body.is-swiping .swipe-analog {
   height: 23px;
 }
 
+.brand-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .brand h1 {
   margin: 0;
   font-size: 1.02rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
   line-height: 1;
   white-space: nowrap;
 }
