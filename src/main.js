@@ -2158,17 +2158,10 @@ function faceAsset() {
         <clipPath id="faceSkinClip">
           <path d="M89 174c0-77 40-123 111-123s111 46 111 123c0 98-44 158-111 158S89 272 89 174Z"></path>
         </clipPath>
-        <clipPath id="smileClip">
-          <path d="M139 267c22 38 99 40 124 1-18 54-105 57-124-1Z"></path>
-        </clipPath>
         <pattern id="hairDot" width="13" height="13" patternUnits="userSpaceOnUse">
           <circle cx="4" cy="5" r="2.2" fill="#2a1b16" opacity="0.65"></circle>
           <circle cx="10" cy="10" r="1.7" fill="#060606" opacity="0.78"></circle>
         </pattern>
-        <linearGradient id="toothShade" x1="160" x2="244" y1="278" y2="306" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#fffaf2"></stop>
-          <stop offset="100%" stop-color="#d9c9b8"></stop>
-        </linearGradient>
       </defs>
       <g class="avatar-head" filter="url(#avatarDepth)">
         <path class="face-shoulder" d="M36 398c11-42 38-67 86-78 29-7 52-12 78-12s49 5 78 12c48 11 75 36 86 78H36Z"></path>
@@ -2214,13 +2207,7 @@ function faceAsset() {
           <path class="face-nostril" d="M180 255c10 7 21 6 28 0"></path>
           <path class="face-nostril" d="M218 255c10 5 19 3 25-5"></path>
           <path class="face-chin-shadow" d="M137 296c35 25 91 25 126-1"></path>
-          <path class="face-smile-fill" d="M136 270c22 47 105 48 129 0-34 16-91 16-129 0Z"></path>
-          <g clip-path="url(#smileClip)">
-            <path class="face-teeth" d="M151 277c27 22 70 23 96 0-8 29-25 40-48 40-24 0-41-12-48-40Z"></path>
-            <path class="face-tooth-line" d="M199 281v31"></path>
-          </g>
-          <path class="face-lip-highlight" d="M153 274c28 14 66 14 94 0"></path>
-          <path class="face-mouth" d="M136 270c33 29 92 30 129 0"></path>
+          <path class="face-smug-smile" d="M153 278c25 18 71 15 95-8"></path>
         </g>
       </g>
       <g data-direction-arrow class="direction-arrow" data-dir="up">

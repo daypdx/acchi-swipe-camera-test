@@ -448,10 +448,7 @@ body.is-swiping .swipe-analog {
 .face-durag-fold,
 .face-durag-tail,
 .face-chin-shadow,
-.face-smile-fill,
-.face-teeth,
-.face-tooth-line,
-.face-lip-highlight,
+.face-smug-smile,
 .face-eye-white,
 .face-iris,
 .face-pupil,
@@ -461,7 +458,6 @@ body.is-swiping .swipe-analog {
 .face-nostril,
 .face-lid,
 .face-under-eye,
-.face-mouth,
 .face-brow,
 .face-eye,
 .face-nose,
@@ -655,31 +651,6 @@ body.is-swiping .swipe-analog {
   opacity: 0.7;
 }
 
-.face-smile-fill {
-  fill: #2a1410;
-  stroke-width: 4;
-}
-
-.face-teeth {
-  fill: url("#toothShade");
-  stroke: #1d1513;
-  stroke-width: 3;
-}
-
-.face-tooth-line {
-  fill: none;
-  stroke: #cdbba9;
-  stroke-width: 2;
-}
-
-.face-lip-highlight {
-  fill: none;
-  stroke: #d9946d;
-  stroke-width: 4;
-  opacity: 0.5;
-}
-
-.face-mouth,
 .face-brow,
 .face-nose {
   fill: none;
@@ -700,9 +671,10 @@ body.is-swiping .swipe-analog {
   stroke-width: 5;
 }
 
-.face-mouth {
-  stroke: #d8926c;
-  stroke-width: 6;
+.face-smug-smile {
+  fill: none;
+  stroke: #24120f;
+  stroke-width: 8;
 }
 
 .direction-arrow {
