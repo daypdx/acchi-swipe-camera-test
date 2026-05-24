@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="JitSwipe">
+  <rect width="180" height="180" rx="38" fill="#f8f7f2"/>
+  <circle cx="90" cy="90" r="62" fill="#f2b544" stroke="#161616" stroke-width="10"/>
+  <path d="M90 34v32M90 114v32M34 90h32M114 90h32" fill="none" stroke="#161616" stroke-width="10" stroke-linecap="round"/>
+  <path d="M63 78c12-11 42-12 54 0M65 107c14 12 36 12 50 0" fill="none" stroke="#161616" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="68" cy="91" r="7" fill="#161616"/>
+  <circle cx="112" cy="91" r="7" fill="#161616"/>
+</svg>

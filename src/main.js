@@ -15,6 +15,18 @@ const DIRECTION_LABELS = {
 };
 const MEDIAPIPE_VERSION = "0.10.35";
 const query = new URLSearchParams(window.location.search);
+const ROLE_INTRO_COPY = {
+  looker: {
+    title: "You are the Looker.",
+    body: "Move your head before the pointer catches you.",
+    privacy: "Camera stays on your device.",
+  },
+  pointer: {
+    title: "You are the Pointer.",
+    body: "Pick a direction and catch the Looker slipping.",
+    privacy: "",
+  },
+};
 
 const state = {
   mode: query.get("mode") === "ai" ? "ai" : "online",
@@ -34,6 +46,8 @@ const state = {
     ready: false,
     loading: false,
     error: "",
+    errorType: "",
+    fallbackSwipe: false,
     stream: null,
     landmarker: null,
     handLandmarker: null,
@@ -118,8 +132,8 @@ app.innerHTML = `
         <button type="button" data-mode="ai" role="tab" aria-selected="false">${icon("bot")}Computer</button>
       </div>
       <div class="scorebar" aria-live="polite">
-        <div class="score"><span>Pointer</span><strong data-score="pointer">0</strong></div>
-        <div class="score"><span>Looker</span><strong data-score="looker">0</strong></div>
+        <div class="score"><span data-score-label="pointer">Pointer</span> <strong data-score="pointer">0</strong></div>
+        <div class="score"><span data-score-label="looker">Looker</span> <strong data-score="looker">0</strong></div>
       </div>
     </header>
 
@@ -132,10 +146,11 @@ app.innerHTML = `
               <h2 data-round-title>Point. Dodge. Don't match.</h2>
             </div>
             <div class="round-actions" aria-label="Round controls">
-              <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}</button>
-              <button type="button" data-action="reset-game" title="Reset game" aria-label="Reset game">${icon("refresh")}</button>
+              <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}<span>Run It Back</span></button>
+              <button type="button" data-action="reset-game" title="Reset game" aria-label="Reset game">${icon("refresh")}<span>Train Again</span></button>
             </div>
           </div>
+          <div class="role-badge" data-role-badge>You are the Pointer</div>
 
           <div class="face-scene" aria-hidden="true">
             ${faceAsset()}
@@ -161,11 +176,11 @@ app.innerHTML = `
               <span data-control-kicker>Local match</span>
               <strong data-control-title>Two swipes decide the round</strong>
             </div>
-            <button class="icon-button" type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}</button>
+            <button class="icon-button" type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}<span>Quick Round</span></button>
             <div class="menu-actions" aria-label="Menu controls">
-              <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}</button>
-              <button type="button" data-action="reset-game" title="Reset game" aria-label="Reset game">${icon("refresh")}</button>
-              <button type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}</button>
+              <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}<span>Run It Back</span></button>
+              <button type="button" data-action="reset-game" title="Reset game" aria-label="Reset game">${icon("refresh")}<span>Train Again</span></button>
+              <button type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}<span>Quick Round</span></button>
             </div>
           </div>
 
@@ -249,8 +264,23 @@ app.innerHTML = `
               <div class="camera-panel">
                 <header>
                   <span class="role-pill" data-camera-role-label>Camera</span>
-                  <button class="camera-action" type="button" data-action="camera" title="Start camera">${icon("camera")}Start</button>
+                  <button class="camera-action" type="button" data-action="camera" title="Run camera">${icon("camera")}Run It</button>
                 </header>
+                <section class="camera-start-card">
+                  <p class="camera-brand">JitSwipe</p>
+                  <h3>Where the real ones train.</h3>
+                  <p class="camera-role-copy" data-role-copy>You are the Pointer. Pick a direction and catch the Looker slipping.</p>
+                  <p class="camera-privacy" data-role-privacy></p>
+                  <div class="camera-status-message" data-camera-status role="status" aria-live="polite">Tap Run It when you're ready.</div>
+                  <div class="camera-fallback-actions" data-camera-fallback>
+                    <strong data-camera-fallback-title>Camera is blocked.</strong>
+                    <span data-camera-fallback-copy>Enable camera access to use Looker mode, or use swipe-only practice.</span>
+                    <div>
+                      <button class="ghost-action" type="button" data-action="try-camera-again">${icon("camera")}Try Camera Again</button>
+                      <button class="solid-action" type="button" data-action="use-swipe-practice">${icon("pointer")}Use Swipe Practice</button>
+                    </div>
+                  </div>
+                </section>
                 <div class="tracking-readout">
                   <span class="tracking-label" data-tracking-label>Camera</span>
                   <div class="tracking-direction" data-tracking-direction>${icon("face")}Center</div>
@@ -308,6 +338,8 @@ const els = {
   panels: [...document.querySelectorAll("[data-panel]")],
   scorePointer: document.querySelector('[data-score="pointer"]'),
   scoreLooker: document.querySelector('[data-score="looker"]'),
+  scorePointerLabel: document.querySelector('[data-score-label="pointer"]'),
+  scoreLookerLabel: document.querySelector('[data-score-label="looker"]'),
   choicePointer: document.querySelector('[data-choice-label="pointer"]'),
   choiceLooker: document.querySelector('[data-choice-label="looker"]'),
   resultPointer: document.querySelector('[data-result-icon="pointer"]'),
@@ -316,6 +348,7 @@ const els = {
   statusLabel: document.querySelector("[data-status-label]"),
   logTitle: document.querySelector("[data-log-title]"),
   logLine: document.querySelector("[data-log-line]"),
+  roleBadge: document.querySelector("[data-role-badge]"),
   controlKicker: document.querySelector("[data-control-kicker]"),
   controlTitle: document.querySelector("[data-control-title]"),
   rounds: document.querySelector("[data-rounds]"),
@@ -325,6 +358,12 @@ const els = {
   cameraEmpty: document.querySelector("[data-camera-empty]"),
   cameraButton: document.querySelector('[data-action="camera"]'),
   cameraRoleLabel: document.querySelector("[data-camera-role-label]"),
+  roleCopy: document.querySelector("[data-role-copy]"),
+  rolePrivacy: document.querySelector("[data-role-privacy]"),
+  cameraStatus: document.querySelector("[data-camera-status]"),
+  cameraFallback: document.querySelector("[data-camera-fallback]"),
+  cameraFallbackTitle: document.querySelector("[data-camera-fallback-title]"),
+  cameraFallbackCopy: document.querySelector("[data-camera-fallback-copy]"),
   trackingLabel: document.querySelector("[data-tracking-label]"),
   trackingDirection: document.querySelector("[data-tracking-direction]"),
   meterX: document.querySelector('[data-meter="x"]'),
@@ -443,6 +482,29 @@ function bindActions() {
       return;
     }
     await startCamera();
+  });
+
+  document.querySelector('[data-action="try-camera-again"]').addEventListener("click", async () => {
+    state.camera.fallbackSwipe = false;
+    await startCamera();
+  });
+
+  document.querySelector('[data-action="use-swipe-practice"]').addEventListener("click", () => {
+    const role = activeCameraRole() || state.ai.humanRole || "looker";
+    stopCameraStream();
+    state.mode = "ai";
+    state.ai.humanRole = role;
+    state.ai.thinking = false;
+    state.camera.loading = false;
+    state.camera.ready = false;
+    state.camera.error = "";
+    state.camera.errorType = "";
+    state.camera.fallbackSwipe = true;
+    state.ui.menuOpen = false;
+    resetRound(false);
+    if (role === "looker") ensureAiLookerPointer();
+    state.message = "Swipe practice. Run it.";
+    render();
   });
 
   document.querySelector('[data-action="create-room"]').addEventListener("click", async () => {
@@ -723,7 +785,7 @@ function handleOnlineMessage(message) {
   state.roundNumber = room.roundNumber;
   state.phase = room.phase;
   state.lastRound = room.lastRound;
-  state.message = room.lastRound?.matched ? "Caught. Pointer scores." : "Dodged. Looker scores.";
+  state.message = room.lastRound?.matched ? "Caught." : "Dodged.";
 
   if (room.phase === "reveal") {
     state.choices.pointer = room.choices.pointer;
@@ -813,7 +875,10 @@ function setupScreenSwipe() {
       const direction =
         Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
       if (state.mode === "online") playOnlineRound(direction);
-      if (state.mode === "ai") playAiRound(direction);
+      if (state.mode === "ai") {
+        if (state.ai.humanRole === "looker" && state.camera.fallbackSwipe) playAiLookRound(direction);
+        else playAiRound(direction);
+      }
     },
     { passive: true },
   );
@@ -838,7 +903,11 @@ function canUseScreenSwipe(target) {
       !state.online.submitted.pointer
     );
   }
-  if (state.mode === "ai") return state.ai.humanRole === "pointer" && !state.ai.thinking;
+  if (state.mode === "ai") {
+    if (state.ai.thinking) return false;
+    if (!state.camera.fallbackSwipe) return false;
+    return state.ai.humanRole === "pointer" || state.ai.humanRole === "looker";
+  }
   return false;
 }
 
@@ -936,7 +1005,7 @@ function resolveRound(pointer, looker) {
     winner,
     matched,
   };
-  state.message = matched ? "Caught. Pointer scores." : "Dodged. Looker scores.";
+  state.message = matched ? "Caught." : "Dodged.";
   state.phase = "reveal";
   state.choices.pointer = pointer;
   state.choices.looker = looker;
@@ -953,20 +1022,24 @@ function resetRound(resetMessage = true) {
   state.phase = "input";
   state.ai.pointerPromptedAt = 0;
   clearCameraLock();
-  if (resetMessage) state.message = state.mode === "camera" ? "Camera duel." : "Point. Dodge. Don't match.";
+  if (resetMessage) state.message = "Run it back.";
 }
 
 async function startCamera() {
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-    const message = "Camera needs secure HTTPS. Open the https:// phone URL and allow the certificate.";
-    state.camera.error = message;
-    toast(message);
+    const unsupported = friendlyCameraError(new DOMException("Unsupported browser", "NotSupportedError"));
+    state.camera.error = unsupported.message;
+    state.camera.errorType = unsupported.type;
+    state.camera.fallbackSwipe = false;
+    toast(unsupported.message);
     render();
     return;
   }
 
   state.camera.loading = true;
   state.camera.error = "";
+  state.camera.errorType = "";
+  state.camera.fallbackSwipe = false;
   render();
 
   try {
@@ -988,6 +1061,7 @@ async function startCamera() {
     state.camera.ready = true;
     state.camera.loading = false;
     state.camera.error = "";
+    state.camera.errorType = "";
     state.camera.trackerNote = "Loading tracker.";
     state.camera.baseline = null;
     state.camera.seen = false;
@@ -1006,8 +1080,11 @@ async function startCamera() {
   } catch (error) {
     stopCameraStream();
     state.camera.loading = false;
-    state.camera.error = friendlyCameraError(error);
-    toast(state.camera.error);
+    state.camera.ready = false;
+    const cameraError = friendlyCameraError(error);
+    state.camera.error = cameraError.message;
+    state.camera.errorType = cameraError.type;
+    if (!shouldShowCameraFallback()) toast(state.camera.error);
   }
 
   render();
@@ -1176,12 +1253,34 @@ async function createFaceLandmarker(FaceLandmarker, fileset) {
 }
 
 function friendlyCameraError(error) {
-  if (!window.isSecureContext) return "Camera needs HTTPS. Open the https:// phone URL.";
-  if (error?.name === "NotAllowedError") return "Camera permission was blocked.";
-  if (error?.name === "NotFoundError") return "No camera was found.";
-  if (error?.name === "NotReadableError") return "Camera is already in use by another app.";
-  if (error?.message) return `Camera could not start: ${error.message}`;
-  return "Camera could not start.";
+  if (!window.isSecureContext || error?.name === "NotSupportedError") {
+    return {
+      type: "unsupported",
+      message: "This browser does not support camera play.",
+    };
+  }
+  if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
+    return {
+      type: "blocked",
+      message: "Camera is blocked. Enable camera access in your browser settings.",
+    };
+  }
+  if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
+    return {
+      type: "no-camera",
+      message: "No camera found.",
+    };
+  }
+  if (error?.name === "NotReadableError") {
+    return {
+      type: "blocked",
+      message: "Camera is blocked. Close other camera apps and try again.",
+    };
+  }
+  return {
+    type: "error",
+    message: error?.message ? `Camera could not start: ${error.message}` : "Camera could not start.",
+  };
 }
 
 function calibrateCamera() {
@@ -1719,10 +1818,14 @@ function render() {
 
   els.scorePointer.textContent = state.scores.pointer;
   els.scoreLooker.textContent = state.scores.looker;
+  const scoreLabels = scoreLabelText();
+  els.scorePointerLabel.textContent = scoreLabels.pointer;
+  els.scoreLookerLabel.textContent = scoreLabels.looker;
   els.statusLabel.textContent = `Round ${state.roundNumber}`;
   els.title.textContent = state.phase === "reveal" ? state.message : modeTitle();
   els.controlKicker.textContent = modeKicker();
   els.controlTitle.textContent = modeControlTitle();
+  renderRoleIntro();
 
   els.choicePointer.textContent = state.choices.pointer
     ? DIRECTION_LABELS[state.choices.pointer]
@@ -1751,16 +1854,17 @@ function render() {
 function updateRuntimeClasses() {
   const phone = isPhoneRuntime();
   const onlineReady = state.mode === "online" && state.online.ready;
-  const looker = shouldShowCameraPanel();
+  const cameraActive = shouldShowCameraPanel();
+  const lookerRole = activeCameraRole() === "looker";
   const pointerActive =
     (state.mode === "online" && state.online.ready && state.online.role === "pointer") ||
     (state.mode === "ai" && state.ai.humanRole === "pointer");
   document.body.classList.toggle("is-desktop-locked", !phone);
   document.body.classList.toggle("is-phone-runtime", phone);
   document.body.classList.toggle("is-room-ready", onlineReady);
-  document.body.classList.toggle("is-camera-looker", looker);
+  document.body.classList.toggle("is-camera-looker", cameraActive);
   document.body.classList.toggle("is-camera-ready", state.camera.ready);
-  document.body.classList.toggle("is-looker-role", looker);
+  document.body.classList.toggle("is-looker-role", lookerRole);
   document.body.classList.toggle("is-pointer-role", pointerActive);
   document.body.classList.toggle("is-pointer-gesture", isPointerGestureActive());
   document.body.classList.toggle("is-controls-needed", shouldShowPhoneControls());
@@ -1813,6 +1917,7 @@ function shouldShowPhoneControls() {
   }
 
   if (state.mode === "ai") {
+    if (state.camera.fallbackSwipe) return false;
     return !state.camera.ready;
   }
 
@@ -1831,7 +1936,7 @@ function renderMenuToggle() {
 function ensureAiLookerPointer() {
   if (state.mode !== "ai" || state.ai.humanRole !== "looker") return false;
   if (state.phase !== "input" || state.ai.thinking || state.choices.pointer) return false;
-  if (!state.camera.ready || !state.camera.seen) return false;
+  if (!(state.camera.fallbackSwipe || (state.camera.ready && state.camera.seen))) return false;
 
   state.choices.pointer = randomDirection();
   state.ai.pointerPromptedAt = performance.now();
@@ -1855,7 +1960,7 @@ function modeControlTitle() {
 
 function modeTitle() {
   if (state.mode === "camera") {
-    if (state.camera.loading) return "Camera waking up.";
+    if (state.camera.loading) return "Requesting camera access...";
     if (!state.camera.ready) return "Camera duel.";
     if (!state.camera.seen) return "Find a face.";
     return state.camera.direction === "center" ? "Hold center." : `${DIRECTION_LABELS[state.camera.direction]}.`;
@@ -1864,7 +1969,7 @@ function modeTitle() {
     if (!state.online.connected) return "Make a room.";
     if (!state.online.roomCode) return "Create or join.";
     if (!state.online.ready) return "Waiting for player two.";
-    if (!state.camera.ready) return "Start your camera.";
+    if (!state.camera.ready) return "Run It.";
     if (state.online.role === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
     if (state.online.role === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
     if (state.online.role === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
@@ -1877,8 +1982,13 @@ function modeTitle() {
         : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`;
   }
   if (state.mode === "ai") {
+    if (state.camera.fallbackSwipe) {
+      if (state.ai.thinking) return "Locked in.";
+      if (state.ai.humanRole === "pointer") return "Swipe to catch.";
+      return state.choices.pointer ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}.` : "Swipe to dodge.";
+    }
     if (state.ai.thinking) return state.ai.humanRole === "looker" ? "Locked in." : "Computer thinking.";
-    if (!state.camera.ready) return "Start your camera.";
+    if (!state.camera.ready) return "Run It.";
     if (state.ai.humanRole === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
     if (state.ai.humanRole === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
     if (state.ai.humanRole === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
@@ -1894,6 +2004,75 @@ function modeTitle() {
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
   if (!state.choices.pointer && state.choices.looker) return "Pointer turn.";
   return "Point. Dodge. Don't match.";
+}
+
+function scoreLabelText() {
+  if (state.mode !== "ai") {
+    return {
+      pointer: "Pointer",
+      looker: "Looker",
+    };
+  }
+
+  return {
+    pointer: state.ai.humanRole === "pointer" ? "You" : "CPU",
+    looker: state.ai.humanRole === "looker" ? "You" : "CPU",
+  };
+}
+
+function renderRoleIntro() {
+  const role = activeCameraRole() || state.ai.humanRole || "pointer";
+  const copy = ROLE_INTRO_COPY[role] || ROLE_INTRO_COPY.pointer;
+  if (els.roleBadge) els.roleBadge.textContent = `You are the ${DIRECTION_LABELS[role]}`;
+  if (els.roleCopy) els.roleCopy.textContent = `${copy.title} ${copy.body}`;
+  if (els.rolePrivacy) {
+    els.rolePrivacy.textContent = copy.privacy;
+    els.rolePrivacy.hidden = !copy.privacy;
+  }
+  const showFallback = shouldShowCameraFallback();
+  if (els.cameraStatus) {
+    els.cameraStatus.textContent = cameraStatusText(role);
+    els.cameraStatus.classList.toggle("is-hidden", showFallback);
+  }
+  if (els.cameraFallback) els.cameraFallback.classList.toggle("is-visible", showFallback);
+  if (els.cameraFallbackTitle) els.cameraFallbackTitle.textContent = cameraFallbackTitle();
+  if (els.cameraFallbackCopy) {
+    els.cameraFallbackCopy.textContent = `Enable camera access to use ${DIRECTION_LABELS[role]} mode, or use swipe-only practice.`;
+  }
+}
+
+function cameraStatusText(role = activeCameraRole()) {
+  if (state.camera.fallbackSwipe) return "Swipe practice on. Run it.";
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    return "This browser does not support camera play.";
+  }
+  if (state.camera.loading) return "Requesting camera access...";
+  if (state.camera.error) return state.camera.error;
+  if (!state.camera.ready) return "Tap Run It when you're ready.";
+
+  if (!hasCameraTracker(role)) {
+    return "Camera active. Get ready. Loading tracker...";
+  }
+  if (role === "looker" && !state.camera.seen) return "Camera active. Get ready.";
+  if (role === "pointer" && !state.camera.handSeen) return "Camera active. Get ready.";
+  return "Ready. Run it.";
+}
+
+function shouldShowCameraFallback() {
+  return ["blocked", "no-camera", "unsupported"].includes(state.camera.errorType);
+}
+
+function cameraFallbackTitle() {
+  if (state.camera.errorType === "no-camera") return "No camera found.";
+  if (state.camera.errorType === "unsupported") return "Camera play is unavailable.";
+  return "Camera is blocked.";
+}
+
+function cameraButtonContent(role = activeCameraRole()) {
+  if (state.camera.loading) return `${icon("loader")}Requesting`;
+  if (state.camera.error) return `${icon("camera")}Try Again`;
+  if (state.camera.ready) return role === "looker" ? `${icon("crosshair")}Center` : `${icon("camera")}Ready`;
+  return `${icon("camera")}Run It`;
 }
 
 function updatePadStates() {
@@ -1923,7 +2102,7 @@ function renderOnline() {
 function onlineChoiceState() {
   if (!state.online.roomCode) return "Join a room";
   if (!state.online.ready) return "Need player two";
-  if (!state.camera.ready) return "Start camera";
+  if (!state.camera.ready) return "Run It";
   if (state.online.submitted[state.online.role]) return "Locked";
   if (state.online.role === "looker") return "Dodge point";
   return "Point to catch";
@@ -1946,8 +2125,10 @@ function renderAi() {
   els.aiOpponentLabel.textContent = `CPU ${roleVerb(computerRole)}`;
   els.aiPadRole.textContent = `You ${roleVerb(state.ai.humanRole)}`;
   els.aiChoiceState.textContent =
-    !state.camera.ready
-      ? "Start camera"
+    state.camera.fallbackSwipe
+      ? "Swipe practice"
+      : !state.camera.ready
+      ? "Run It"
       : state.ai.humanRole === "looker"
         ? state.choices.pointer
           ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}`
@@ -1972,12 +2153,12 @@ function updateLog() {
 
   els.logTitle.textContent = state.lastRound
     ? state.lastRound.matched
-      ? "Caught looking same way."
-      : "Looker dodged it."
+      ? "Point matched."
+      : "Looker escaped."
     : "First to five wins.";
 
   const point = state.lastRound
-    ? `${DIRECTION_LABELS[state.lastRound.pointer]} vs ${DIRECTION_LABELS[state.lastRound.looker]}. ${leader}`
+    ? `${DIRECTION_LABELS[state.lastRound.pointer]} vs ${DIRECTION_LABELS[state.lastRound.looker]}. Run it back. ${leader}`
     : "Pointer scores by matching. Looker scores by dodging.";
   els.logLine.textContent = point;
 }
@@ -2004,16 +2185,17 @@ function renderCameraReadout() {
   if (state.phase !== "reveal") els.title.textContent = modeTitle();
   els.cameraEmpty.style.display = state.camera.ready ? "none" : "grid";
   els.cameraButton.disabled = state.camera.loading;
-  els.cameraButton.innerHTML = state.camera.loading
-    ? `${icon("loader")}Loading`
-    : state.camera.ready
-      ? role === "looker"
-        ? `${icon("crosshair")}Center`
-        : `${icon("camera")}Ready`
-      : `${icon("camera")}Start`;
+  els.cameraButton.innerHTML = cameraButtonContent(role);
+  els.cameraButton.title = state.camera.ready && role === "looker" ? "Center camera" : "Run camera";
 
   if (els.cameraRoleLabel) els.cameraRoleLabel.textContent = role === "pointer" ? "Pointer" : "Looker";
   if (els.trackingLabel) els.trackingLabel.textContent = role === "pointer" ? "Hand" : "Head";
+  const showFallback = shouldShowCameraFallback();
+  if (els.cameraStatus) {
+    els.cameraStatus.textContent = cameraStatusText(role);
+    els.cameraStatus.classList.toggle("is-hidden", showFallback);
+  }
+  if (els.cameraFallback) els.cameraFallback.classList.toggle("is-visible", showFallback);
 
   const direction =
     role === "pointer"

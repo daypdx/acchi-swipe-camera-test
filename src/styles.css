@@ -300,6 +300,23 @@ body.is-swiping .swipe-analog {
   line-height: 1;
 }
 
+.role-badge {
+  position: absolute;
+  left: 16px;
+  top: 84px;
+  z-index: 5;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--ink);
+  background: #fff;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
 .layout {
   width: min(1160px, calc(100% - 32px));
   margin: 0 auto;
@@ -371,9 +388,17 @@ body.is-swiping .swipe-analog {
   letter-spacing: 0;
 }
 
-.round-actions button {
-  width: 42px;
-  padding: 0;
+.round-actions button,
+.icon-button {
+  width: auto;
+  padding: 0 10px;
+  font-weight: 900;
+}
+
+.round-actions button span,
+.icon-button span,
+.menu-actions button span {
+  white-space: nowrap;
 }
 
 .round-actions svg,
@@ -1332,6 +1357,91 @@ body.is-swiping .swipe-analog {
   gap: 12px;
 }
 
+.camera-start-card {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.camera-brand {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.camera-start-card h3 {
+  margin: 0;
+  font-size: clamp(1.55rem, 4vw, 2.2rem);
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.camera-role-copy,
+.camera-privacy {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 750;
+  line-height: 1.28;
+}
+
+.camera-privacy {
+  color: #3f6f48;
+}
+
+.camera-status-message {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid rgba(22, 22, 22, 0.72);
+  background: #fff8da;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.camera-status-message.is-hidden {
+  display: none;
+}
+
+.camera-fallback-actions {
+  display: none;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgba(22, 22, 22, 0.72);
+  background: #fff;
+}
+
+.camera-fallback-actions.is-visible {
+  display: grid;
+}
+
+.camera-fallback-actions > strong {
+  font-size: 1rem;
+}
+
+.camera-fallback-actions > span {
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.camera-fallback-actions > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.camera-fallback-actions .solid-action,
+.camera-fallback-actions .ghost-action {
+  min-height: 40px;
+  padding: 0 10px;
+  box-shadow: none;
+  font-size: 0.86rem;
+}
+
 .camera-action {
   min-width: 44px;
   padding: 0 12px;
@@ -1775,7 +1885,7 @@ body.is-phone-runtime .mode-tabs {
 }
 
 body.is-phone-runtime .scorebar {
-  width: min(210px, 58vw);
+  width: min(260px, 68vw);
   justify-self: auto;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid rgba(22, 22, 22, 0.82);
@@ -1786,15 +1896,39 @@ body.is-phone-runtime .scorebar {
 
 body.is-phone-runtime .score {
   padding: 5px 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
   text-align: center;
 }
 
 body.is-phone-runtime .score span {
-  display: none;
+  display: inline;
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 body.is-phone-runtime .score strong {
   font-size: 1rem;
+}
+
+body.is-phone-runtime .role-badge {
+  position: fixed;
+  top: calc(48px + env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 31;
+  min-height: 34px;
+  max-width: 34vw;
+  padding: 5px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-color: rgba(22, 22, 22, 0.78);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 22px rgba(22, 22, 22, 0.13);
+  font-size: 0.62rem;
 }
 
 body.is-phone-runtime .layout {
@@ -1870,8 +2004,9 @@ body.is-phone-runtime .round-actions {
 }
 
 body.is-phone-runtime .round-actions button {
-  width: 34px;
+  width: auto;
   min-height: 34px;
+  padding: 0 9px;
   border: 1px solid rgba(22, 22, 22, 0.72);
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 6px 18px rgba(22, 22, 22, 0.12);
@@ -2046,6 +2181,49 @@ body.is-phone-runtime .camera-swipe {
   display: none;
 }
 
+body.is-phone-runtime .camera-start-card {
+  padding: 0 12px 12px;
+  gap: 8px;
+  border: 0;
+  text-align: center;
+}
+
+body.is-phone-runtime .camera-brand {
+  font-size: 0.72rem;
+}
+
+body.is-phone-runtime .camera-start-card h3 {
+  font-size: clamp(1.35rem, 7vw, 2rem);
+}
+
+body.is-phone-runtime .camera-role-copy,
+body.is-phone-runtime .camera-privacy {
+  font-size: 0.9rem;
+}
+
+body.is-phone-runtime .camera-status-message {
+  min-height: 40px;
+  justify-content: center;
+  padding: 8px 9px;
+}
+
+body.is-phone-runtime .camera-fallback-actions {
+  text-align: left;
+  gap: 8px;
+  padding: 9px;
+}
+
+body.is-phone-runtime .camera-fallback-actions > div {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.is-phone-runtime .camera-fallback-actions .solid-action,
+body.is-phone-runtime .camera-fallback-actions .ghost-action {
+  min-height: 38px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+}
+
 body.is-phone-runtime .camera-action {
   min-width: 152px;
   min-height: 48px;
@@ -2163,13 +2341,18 @@ body.is-phone-runtime .menu-actions {
 }
 
 body.is-phone-runtime .menu-actions button {
-  width: 34px;
+  width: auto;
   min-height: 34px;
-  display: grid;
-  place-items: center;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   border: 1px solid rgba(22, 22, 22, 0.78);
   background: #fff;
   color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 body.is-phone-runtime .menu-actions svg {
@@ -2200,7 +2383,7 @@ body.is-phone-runtime .camera-rig {
 }
 
 body.is-phone-runtime.is-camera-looker.is-controls-needed:not(.is-menu-open) .controls {
-  max-height: 82px;
+  max-height: min(48dvh, 390px);
 }
 
 body.is-phone-runtime.is-camera-looker.is-controls-needed:not(.is-menu-open) .control-top {
