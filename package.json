@@ -1,0 +1,20 @@
+{
+  "name": "acchi-swipe-game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "serve": "node server/rooms.js",
+    "start": "npm run build && npm run serve"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "selfsigned": "^5.5.0",
+    "ws": "^8.21.0"
+  }
+}
