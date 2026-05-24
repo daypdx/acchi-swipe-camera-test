@@ -585,7 +585,7 @@ function playOnlineRound(direction) {
     return;
   }
   if (state.online.role === "looker") {
-    toast("Use the camera to look.");
+    toast("You're the looker. Dodge with your head.");
     return;
   }
   if (!state.online.ready) {
@@ -604,7 +604,7 @@ function playOnlineRound(direction) {
 function playAiRound(direction) {
   if (state.phase === "reveal" || state.ai.thinking) return;
   if (state.ai.humanRole === "looker") {
-    toast("Use the camera to look.");
+    toast("You're the looker. Dodge with your head.");
     return;
   }
 
