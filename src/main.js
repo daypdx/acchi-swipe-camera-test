@@ -2099,30 +2099,42 @@ function faceAsset() {
   return `
     <svg class="face-asset" viewBox="0 0 400 400" role="img" aria-label="Game face">
       <defs>
-        <clipPath id="faceClip">
-          <circle cx="200" cy="206" r="126"></circle>
-        </clipPath>
+        <radialGradient id="avatarSkin" cx="46%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="#bd7847"></stop>
+          <stop offset="64%" stop-color="#9f6038"></stop>
+          <stop offset="100%" stop-color="#7b452c"></stop>
+        </radialGradient>
       </defs>
       <g class="avatar-head">
-        <circle cx="200" cy="206" r="126" class="face-head"></circle>
-        <path class="face-durag-tail" d="M279 125c34 25 44 63 29 103"></path>
-        <path class="face-durag-tail" d="M291 133c31 7 51 28 61 63"></path>
-        <path class="face-durag" d="M79 180c4-66 51-117 120-119 70-2 120 45 128 113-46 4-83-8-112-39-25 35-70 53-136 45Z"></path>
-        <path class="face-durag-fold" d="M104 151c53 12 116 9 185-10"></path>
-        <path class="face-durag-fold" d="M213 81c2 23 2 44-1 63"></path>
+        <path class="face-shirt" d="M76 398c12-53 50-83 124-83s112 30 124 83H76Z"></path>
+        <path class="face-neck" d="M154 296h92l15 61c-25 23-96 23-121 0l14-61Z"></path>
+        <path class="face-shirt-trim" d="M138 328c21 31 103 31 124 0"></path>
+        <ellipse class="face-ear" cx="81" cy="201" rx="27" ry="39"></ellipse>
+        <ellipse class="face-ear" cx="319" cy="201" rx="27" ry="39"></ellipse>
+        <path class="face-head" d="M91 180c0-77 41-125 109-125s109 48 109 125c0 96-45 154-109 154S91 276 91 180Z" fill="url(#avatarSkin)"></path>
+        <path class="face-hair-shadow" d="M90 181c-5-52 8-89 39-112 25-18 59-26 99-21 37 5 65 20 79 46 12 23 13 53 6 88-29-22-61-30-97-29-40 1-84-3-126 28Z"></path>
+        <path class="face-hair" d="M72 160c-3-46 10-82 38-108 26-24 62-35 108-32 46 3 82 19 101 49 18 28 18 65 4 103-29-16-61-21-96-18-38 3-75 0-109-9-19-5-34 0-46 15Z"></path>
+        <path class="face-sideburn" d="M84 179c13 9 20 30 20 59 0 35 12 67 36 95-31-17-51-46-61-89-6-28-4-50 5-65Z"></path>
+        <path class="face-sideburn" d="M316 179c-13 9-20 30-20 59 0 35-12 67-36 95 31-17 51-46 61-89 6-28 4-50-5-65Z"></path>
         <g class="face-look">
-          <path class="face-brow" d="M135 191c16-13 35-13 52-2"></path>
-          <path class="face-brow" d="M223 189c18-11 37-10 51 4"></path>
-          <circle class="face-eye" cx="160" cy="217" r="10"></circle>
-          <circle class="face-eye" cx="242" cy="217" r="10"></circle>
-          <circle class="face-cheek" cx="128" cy="250" r="17"></circle>
-          <circle class="face-cheek" cx="273" cy="250" r="17"></circle>
-          <path class="face-nose" d="M204 218c-9 22-8 34 9 39"></path>
-          <path class="face-mustache" d="M164 263c18-10 29-9 39 2 11-11 24-12 41-2"></path>
-          <path class="face-beard" d="M115 251c13 53 44 80 87 81 43 0 75-27 87-81-12 35-38 55-87 55-48 0-75-20-87-55Z"></path>
-          <path class="face-mouth" d="M158 282c28 22 59 23 91 0"></path>
+          <path class="face-cheek" d="M119 232c24 12 52 12 73 1"></path>
+          <path class="face-cheek" d="M208 233c21 11 52 11 75-1"></path>
+          <path class="face-brow" d="M121 168c21-14 49-15 68-3"></path>
+          <path class="face-brow" d="M215 165c22-11 51-9 66 7"></path>
+          <ellipse class="face-eye-white" cx="159" cy="201" rx="27" ry="24"></ellipse>
+          <ellipse class="face-eye-white" cx="241" cy="201" rx="27" ry="24"></ellipse>
+          <circle class="face-pupil" cx="162" cy="202" r="11"></circle>
+          <circle class="face-pupil" cx="240" cy="202" r="11"></circle>
+          <circle class="face-highlight" cx="166" cy="197" r="4"></circle>
+          <circle class="face-highlight" cx="244" cy="197" r="4"></circle>
+          <path class="face-nose-fill" d="M190 207c-16 20-22 42-11 56 11 14 42 15 56 1 13-13 4-36-15-57-8 6-20 6-30 0Z"></path>
+          <path class="face-nose" d="M197 213c-7 18-10 32-1 42m21-8c10 2 18 0 23-6"></path>
+          <path class="face-beard" d="M104 235c9 66 43 104 96 104s87-38 96-104c-16 38-42 56-96 56s-80-18-96-56Z"></path>
+          <path class="face-mustache" d="M149 264c25-13 42-11 52 4 12-15 29-17 52-4"></path>
+          <path class="face-smile-fill" d="M142 273c30 44 87 45 118 0-34 14-75 14-118 0Z"></path>
+          <path class="face-teeth" d="M155 276c23 21 65 21 90 1-9 23-24 32-45 32-20 0-37-10-45-33Z"></path>
+          <path class="face-mouth" d="M142 273c32 27 82 28 118 0"></path>
         </g>
-        <path d="M68 305c27 41 73 67 132 67 57 0 103-25 130-66" fill="none" stroke="#161616" stroke-width="8" stroke-linecap="round"></path>
       </g>
       <g data-direction-arrow class="direction-arrow" data-dir="up">
         <path class="arrow-fill" d="M200 24 250 79h-30v74h-40V79h-30l50-55Z"></path>

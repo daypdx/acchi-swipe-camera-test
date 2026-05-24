@@ -408,19 +408,31 @@ body.is-swiping .swipe-analog {
 }
 
 .face-head {
-  fill: #9b5f3c;
+  fill: url("#avatarSkin");
   stroke: var(--ink);
   stroke-width: 8;
 }
 
+.face-neck,
+.face-shirt,
+.face-shirt-trim,
+.face-ear,
 .face-hair,
+.face-hair-shadow,
 .face-curl,
+.face-sideburn,
 .face-cheek,
 .face-durag,
 .face-durag-fold,
 .face-durag-tail,
 .face-beard,
 .face-mustache,
+.face-smile-fill,
+.face-teeth,
+.face-eye-white,
+.face-pupil,
+.face-highlight,
+.face-nose-fill,
 .face-mouth,
 .face-brow,
 .face-eye,
@@ -432,9 +444,39 @@ body.is-swiping .swipe-analog {
   stroke-linejoin: round;
 }
 
-.face-hair {
-  fill: #1f1715;
+.face-neck {
+  fill: #8f5334;
+  stroke: var(--ink);
   stroke-width: 7;
+}
+
+.face-shirt {
+  fill: #aab1b4;
+  stroke: var(--ink);
+  stroke-width: 8;
+}
+
+.face-shirt-trim {
+  fill: none;
+  stroke: #f1eee7;
+  stroke-width: 9;
+}
+
+.face-ear {
+  fill: #965836;
+  stroke: var(--ink);
+  stroke-width: 7;
+}
+
+.face-hair {
+  fill: #17110f;
+  stroke-width: 7;
+}
+
+.face-hair-shadow {
+  fill: #2a1812;
+  opacity: 0.62;
+  stroke-width: 0;
 }
 
 .face-curl {
@@ -442,10 +484,16 @@ body.is-swiping .swipe-analog {
   stroke-width: 5;
 }
 
-.face-cheek {
-  fill: #c97b55;
-  opacity: 0.36;
+.face-sideburn {
+  fill: #14100f;
   stroke-width: 0;
+}
+
+.face-cheek {
+  fill: none;
+  stroke: #d08a5a;
+  opacity: 0.3;
+  stroke-width: 12;
 }
 
 .face-durag {
@@ -461,8 +509,8 @@ body.is-swiping .swipe-analog {
 }
 
 .face-beard {
-  fill: #101010;
-  stroke-width: 6;
+  fill: #11100f;
+  stroke-width: 5;
 }
 
 .face-mustache {
@@ -471,9 +519,43 @@ body.is-swiping .swipe-analog {
   stroke-width: 9;
 }
 
+.face-eye-white {
+  fill: #fff7ec;
+  stroke: var(--ink);
+  stroke-width: 6;
+}
+
+.face-pupil {
+  fill: #28160f;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.face-highlight {
+  fill: #fff;
+  stroke-width: 0;
+}
+
 .face-eye {
   fill: var(--ink);
   stroke-width: 0;
+}
+
+.face-nose-fill {
+  fill: #ad6a41;
+  stroke: #7d442b;
+  stroke-width: 5;
+}
+
+.face-smile-fill {
+  fill: #2a1410;
+  stroke-width: 5;
+}
+
+.face-teeth {
+  fill: #fff4e8;
+  stroke: var(--ink);
+  stroke-width: 4;
 }
 
 .face-mouth,
@@ -483,8 +565,19 @@ body.is-swiping .swipe-analog {
   stroke-width: 7;
 }
 
+.face-brow {
+  stroke: #15100f;
+  stroke-width: 11;
+}
+
+.face-nose {
+  stroke: #79442d;
+  stroke-width: 5;
+}
+
 .face-mouth {
-  stroke: #dca17d;
+  stroke: #d8926c;
+  stroke-width: 6;
 }
 
 .direction-arrow {
