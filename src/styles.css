@@ -424,29 +424,47 @@ body.is-swiping .swipe-analog {
 .face-head {
   fill: url("#avatarSkin");
   stroke: var(--ink);
-  stroke-width: 8;
+  stroke-width: 6;
 }
 
+.face-shoulder,
 .face-neck,
+.face-neck-shadow,
 .face-shirt,
 .face-shirt-trim,
 .face-ear,
+.face-ear-line,
 .face-hair,
 .face-hair-shadow,
+.face-hair-texture,
+.face-hairline,
 .face-curl,
 .face-sideburn,
 .face-cheek,
+.face-cheek-glow,
+.face-side-shadow,
+.face-forehead-light,
+.face-forehead-line,
 .face-durag,
 .face-durag-fold,
 .face-durag-tail,
 .face-beard,
+.face-beard-texture,
+.face-beard-light,
 .face-mustache,
 .face-smile-fill,
 .face-teeth,
+.face-tooth-line,
+.face-lip-highlight,
 .face-eye-white,
+.face-iris,
 .face-pupil,
 .face-highlight,
 .face-nose-fill,
+.face-nose-shine,
+.face-nostril,
+.face-lid,
+.face-under-eye,
 .face-mouth,
 .face-brow,
 .face-eye,
@@ -458,38 +476,68 @@ body.is-swiping .swipe-analog {
   stroke-linejoin: round;
 }
 
-.face-neck {
-  fill: #8f5334;
+.face-shoulder {
+  fill: #7d432b;
   stroke: var(--ink);
-  stroke-width: 7;
+  stroke-width: 6;
+}
+
+.face-neck {
+  fill: #9b5b38;
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.face-neck-shadow {
+  fill: #6d3725;
+  opacity: 0.86;
+  stroke-width: 0;
 }
 
 .face-shirt {
-  fill: #aab1b4;
+  fill: url("#avatarShirt");
   stroke: var(--ink);
-  stroke-width: 8;
+  stroke-width: 6;
 }
 
 .face-shirt-trim {
   fill: none;
-  stroke: #f1eee7;
-  stroke-width: 9;
+  stroke: #f2eee6;
+  stroke-width: 10;
 }
 
 .face-ear {
-  fill: #965836;
+  fill: #9b5b38;
   stroke: var(--ink);
-  stroke-width: 7;
+  stroke-width: 5;
+}
+
+.face-ear-line {
+  fill: none;
+  stroke: #6e3928;
+  stroke-width: 4;
 }
 
 .face-hair {
-  fill: #17110f;
-  stroke-width: 7;
+  fill: url("#avatarHair");
+  stroke-width: 6;
 }
 
 .face-hair-shadow {
-  fill: #2a1812;
-  opacity: 0.62;
+  fill: #0b0807;
+  opacity: 0.5;
+  stroke-width: 0;
+}
+
+.face-hair-texture {
+  fill: url("#hairDot");
+  opacity: 0.75;
+  stroke-width: 0;
+}
+
+.face-hairline {
+  fill: #120c0a;
+  opacity: 0.88;
   stroke-width: 0;
 }
 
@@ -499,8 +547,12 @@ body.is-swiping .swipe-analog {
 }
 
 .face-sideburn {
-  fill: #14100f;
+  fill: #0b0908;
   stroke-width: 0;
+}
+
+.face-sideburn.is-right {
+  opacity: 0.94;
 }
 
 .face-cheek {
@@ -508,6 +560,39 @@ body.is-swiping .swipe-analog {
   stroke: #d08a5a;
   opacity: 0.3;
   stroke-width: 12;
+}
+
+.face-cheek-glow {
+  fill: #db8e5b;
+  opacity: 0.2;
+  stroke-width: 0;
+}
+
+.face-side-shadow {
+  fill: #693724;
+  opacity: 0.24;
+  stroke-width: 0;
+}
+
+.face-side-shadow.is-right {
+  opacity: 0.3;
+}
+
+.face-forehead-light {
+  fill: #dc925e;
+  opacity: 0.24;
+  stroke-width: 0;
+}
+
+.face-forehead-line {
+  fill: none;
+  stroke: #70412d;
+  stroke-width: 3;
+  opacity: 0.38;
+}
+
+.face-forehead-line.is-small {
+  opacity: 0.28;
 }
 
 .face-durag {
@@ -523,26 +608,44 @@ body.is-swiping .swipe-analog {
 }
 
 .face-beard {
-  fill: #11100f;
-  stroke-width: 5;
+  fill: url("#avatarBeard");
+  stroke-width: 4;
+}
+
+.face-beard-texture {
+  fill: url("#beardDot");
+  opacity: 0.55;
+  stroke-width: 0;
+}
+
+.face-beard-light {
+  fill: none;
+  stroke: #2b201d;
+  stroke-width: 6;
+  opacity: 0.58;
 }
 
 .face-mustache {
   fill: none;
-  stroke: #101010;
-  stroke-width: 9;
+  stroke: #0b0908;
+  stroke-width: 10;
 }
 
 .face-eye-white {
-  fill: #fff7ec;
+  fill: #fff7ef;
   stroke: var(--ink);
-  stroke-width: 6;
+  stroke-width: 5;
+}
+
+.face-iris {
+  fill: #5a341f;
+  stroke: #24130d;
+  stroke-width: 3;
 }
 
 .face-pupil {
-  fill: #28160f;
-  stroke: var(--ink);
-  stroke-width: 3;
+  fill: #0a0706;
+  stroke-width: 0;
 }
 
 .face-highlight {
@@ -556,20 +659,54 @@ body.is-swiping .swipe-analog {
 }
 
 .face-nose-fill {
-  fill: #ad6a41;
+  fill: url("#avatarNose");
   stroke: #7d442b;
+  stroke-width: 4;
+}
+
+.face-nose-shine {
+  fill: none;
+  stroke: #e2a06d;
   stroke-width: 5;
+  opacity: 0.42;
+}
+
+.face-nostril {
+  fill: none;
+  stroke: #4c2419;
+  stroke-width: 4;
+}
+
+.face-lid,
+.face-under-eye {
+  fill: none;
+  stroke: #5e3425;
+  stroke-width: 4;
+  opacity: 0.7;
 }
 
 .face-smile-fill {
   fill: #2a1410;
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .face-teeth {
-  fill: #fff4e8;
-  stroke: var(--ink);
+  fill: url("#toothShade");
+  stroke: #1d1513;
+  stroke-width: 3;
+}
+
+.face-tooth-line {
+  fill: none;
+  stroke: #cdbba9;
+  stroke-width: 2;
+}
+
+.face-lip-highlight {
+  fill: none;
+  stroke: #d9946d;
   stroke-width: 4;
+  opacity: 0.5;
 }
 
 .face-mouth,
@@ -581,7 +718,11 @@ body.is-swiping .swipe-analog {
 
 .face-brow {
   stroke: #15100f;
-  stroke-width: 11;
+  stroke-width: 13;
+}
+
+.face-brow.is-right {
+  stroke-width: 12;
 }
 
 .face-nose {
