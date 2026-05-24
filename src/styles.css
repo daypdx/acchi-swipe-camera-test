@@ -239,6 +239,11 @@ body.is-swiping .swipe-analog {
   gap: 8px;
 }
 
+.menu-actions,
+.phone-menu-toggle {
+  display: none;
+}
+
 .mode-tabs button {
   padding: 0 14px;
 }
@@ -1832,6 +1837,121 @@ body.is-phone-runtime .toast {
   bottom: calc(16px + env(safe-area-inset-bottom));
   border-width: 1px;
   box-shadow: 0 12px 30px rgba(22, 22, 22, 0.16);
+}
+
+body.is-phone-runtime .round-actions,
+body.is-phone-runtime .icon-button {
+  display: none;
+}
+
+body.is-phone-runtime .phone-menu-toggle {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 34;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(22, 22, 22, 0.78);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  box-shadow: 0 8px 22px rgba(22, 22, 22, 0.13);
+}
+
+body.is-phone-runtime .phone-menu-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+body.is-phone-runtime.is-menu-open .phone-menu-toggle {
+  background: var(--ink);
+  color: #fff;
+}
+
+body.is-phone-runtime .controls {
+  display: grid;
+  max-height: min(42dvh, 360px);
+  transform: translateY(calc(100% + 18px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+body.is-phone-runtime.is-menu-open .controls,
+body.is-phone-runtime:not(.is-controls-needed) .controls {
+  display: grid;
+}
+
+body.is-phone-runtime.is-menu-open .controls {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.is-phone-runtime.is-controls-needed .status h2 {
+  display: block;
+}
+
+body.is-phone-runtime.is-menu-open .status h2 {
+  display: none;
+}
+
+body.is-phone-runtime.is-menu-open .face-scene {
+  padding-bottom: min(30dvh, 240px);
+}
+
+body.is-phone-runtime .control-top {
+  min-height: 50px;
+  display: flex;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(22, 22, 22, 0.18);
+}
+
+body.is-phone-runtime .control-title {
+  min-width: 0;
+}
+
+body.is-phone-runtime .control-title span {
+  font-size: 0.62rem;
+}
+
+body.is-phone-runtime .control-title strong {
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+body.is-phone-runtime .menu-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+body.is-phone-runtime .menu-actions button {
+  width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(22, 22, 22, 0.78);
+  background: #fff;
+  color: var(--ink);
+}
+
+body.is-phone-runtime .menu-actions svg {
+  width: 19px;
+  height: 19px;
+}
+
+body.is-phone-runtime .ai-options {
+  display: block;
+}
+
+body.is-phone-runtime .share-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .log {

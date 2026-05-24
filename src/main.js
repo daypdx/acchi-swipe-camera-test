@@ -68,6 +68,9 @@ const state = {
     humanRole: query.get("role") === "looker" ? "looker" : "pointer",
     thinking: false,
   },
+  ui: {
+    menuOpen: false,
+  },
   toastTimer: 0,
 };
 
@@ -129,6 +132,11 @@ app.innerHTML = `
               <strong data-control-title>Two swipes decide the round</strong>
             </div>
             <button class="icon-button" type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}</button>
+            <div class="menu-actions" aria-label="Menu controls">
+              <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}</button>
+              <button type="button" data-action="reset-game" title="Reset game" aria-label="Reset game">${icon("refresh")}</button>
+              <button type="button" data-action="random-round" title="Quick round" aria-label="Quick round">${icon("dice")}</button>
+            </div>
           </div>
 
           <div class="control-body">
@@ -250,6 +258,9 @@ app.innerHTML = `
       <span class="swipe-analog-ring"></span>
       <span class="swipe-analog-thumb"></span>
     </div>
+    <button class="phone-menu-toggle" type="button" data-action="phone-menu" aria-expanded="false" aria-label="Open menu" title="Menu">
+      ${icon("menu")}
+    </button>
     <section class="desktop-gate" aria-label="Phone only">
       <div class="desktop-phone">
         <span class="desktop-phone-icon" aria-hidden="true">${icon("phone")}</span>
@@ -306,6 +317,7 @@ const els = {
   aiPlayer: document.querySelector(".ai-player"),
   phoneUrl: document.querySelector("[data-phone-url]"),
   swipeAnalog: document.querySelector("[data-swipe-analog]"),
+  menuToggle: document.querySelector('[data-action="phone-menu"]'),
 };
 
 init();
@@ -332,43 +344,54 @@ function bindModes() {
 }
 
 function bindActions() {
-  document.querySelector('[data-action="reset-round"]').addEventListener("click", () => {
-    if (state.mode === "online") {
-      sendOnline({ type: "resetRound" });
-      return;
-    }
-    resetRound();
-    render();
+  document.querySelectorAll('[data-action="reset-round"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.mode === "online") {
+        sendOnline({ type: "resetRound" });
+        return;
+      }
+      resetRound();
+      render();
+    });
   });
 
-  document.querySelector('[data-action="reset-game"]').addEventListener("click", () => {
-    if (state.mode === "online") {
-      sendOnline({ type: "resetGame" });
-      return;
-    }
-    state.scores.pointer = 0;
-    state.scores.looker = 0;
-    state.roundNumber = 1;
-    state.lastRound = null;
-    resetRound(false);
-    render();
+  document.querySelectorAll('[data-action="reset-game"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.mode === "online") {
+        sendOnline({ type: "resetGame" });
+        return;
+      }
+      state.scores.pointer = 0;
+      state.scores.looker = 0;
+      state.roundNumber = 1;
+      state.lastRound = null;
+      resetRound(false);
+      render();
+    });
   });
 
-  document.querySelector('[data-action="random-round"]').addEventListener("click", () => {
-    if (state.mode === "online") {
-      toast("Phone rooms use real choices.");
-      return;
-    }
-    if (state.mode === "ai") {
-      playAiRound(randomDirection());
-      return;
-    }
-    choose("pointer", randomDirection());
-    if (state.mode === "duel") choose("looker", randomDirection());
-    if (state.mode === "camera") {
-      state.camera.direction = randomDirection();
-      resolveRound(state.choices.pointer, state.camera.direction);
-    }
+  document.querySelectorAll('[data-action="random-round"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.mode === "online") {
+        toast("Phone rooms use real choices.");
+        return;
+      }
+      if (state.mode === "ai") {
+        playAiRound(randomDirection());
+        return;
+      }
+      choose("pointer", randomDirection());
+      if (state.mode === "duel") choose("looker", randomDirection());
+      if (state.mode === "camera") {
+        state.camera.direction = randomDirection();
+        resolveRound(state.choices.pointer, state.camera.direction);
+      }
+      render();
+    });
+  });
+
+  els.menuToggle.addEventListener("click", () => {
+    state.ui.menuOpen = !state.ui.menuOpen;
     render();
   });
 
@@ -432,6 +455,7 @@ function bindActions() {
       state.roundNumber = 1;
       state.lastRound = null;
       resetRound(false);
+      state.ui.menuOpen = shouldShowPhoneControls();
       render();
     });
   });
@@ -670,6 +694,10 @@ function handleOnlineMessage(message) {
       state.online.role === "looker" && room.choices.looker ? state.choices.looker || "locked" : null;
   }
 
+  if (isPhoneRuntime() && !shouldShowPhoneControls()) {
+    state.ui.menuOpen = false;
+  }
+
   render();
 }
 
@@ -757,6 +785,7 @@ function setupScreenSwipe() {
 
 function canUseScreenSwipe(target) {
   if (!isPhoneRuntime()) return false;
+  if (state.ui.menuOpen) return false;
   if (target.closest("button, input, label, a, .room-card, .mode-tabs, .round-actions")) {
     return false;
   }
@@ -924,6 +953,7 @@ async function startCamera() {
 
     state.camera.ready = true;
     state.camera.loading = false;
+    state.ui.menuOpen = false;
     calibrateCamera();
     trackCamera();
   } catch (error) {
@@ -1187,6 +1217,7 @@ function render() {
   updateLog();
   renderRounds();
   renderCameraReadout();
+  renderMenuToggle();
 }
 
 function updateRuntimeClasses() {
@@ -1205,6 +1236,7 @@ function updateRuntimeClasses() {
   document.body.classList.toggle("is-pointer-role", pointerActive);
   document.body.classList.toggle("is-pointer-gesture", isPointerGestureActive());
   document.body.classList.toggle("is-controls-needed", shouldShowPhoneControls());
+  document.body.classList.toggle("is-menu-open", phone && state.ui.menuOpen);
   document.body.classList.toggle("is-online-mode", state.mode === "online");
   document.body.classList.toggle("is-ai-mode", state.mode === "ai");
   document.body.classList.toggle("is-reveal", state.phase === "reveal");
@@ -1238,6 +1270,15 @@ function shouldShowPhoneControls() {
   }
 
   return true;
+}
+
+function renderMenuToggle() {
+  if (!els.menuToggle) return;
+  const open = state.ui.menuOpen;
+  els.menuToggle.setAttribute("aria-expanded", String(open));
+  els.menuToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  els.menuToggle.title = open ? "Close" : "Menu";
+  els.menuToggle.innerHTML = open ? icon("close") : icon("menu");
 }
 
 function modeKicker() {
@@ -1561,6 +1602,10 @@ function icon(name) {
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     crosshair:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    menu:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    close:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   };
   return icons[name] || "";
 }
