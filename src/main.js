@@ -1,6 +1,7 @@
 import "./styles.css";
 
 const DIRECTIONS = ["up", "right", "down", "left"];
+const AI_DODGE_REACTION_MS = 450;
 const DIRECTION_LABELS = {
   up: "Up",
   right: "Right",
@@ -92,6 +93,7 @@ const state = {
   ai: {
     humanRole: query.get("role") === "looker" ? "looker" : "pointer",
     thinking: false,
+    pointerPromptedAt: 0,
   },
   ui: {
     menuOpen: false,
@@ -484,6 +486,7 @@ function bindActions() {
     button.addEventListener("click", () => {
       state.ai.humanRole = button.dataset.aiRole;
       state.ai.thinking = false;
+      state.ai.pointerPromptedAt = 0;
       state.scores.pointer = 0;
       state.scores.looker = 0;
       state.roundNumber = 1;
@@ -629,17 +632,21 @@ function playAiRound(direction) {
 
 function playAiLookRound(direction) {
   if (state.phase === "reveal" || state.ai.thinking || state.ai.humanRole !== "looker") return;
+  if (!state.choices.pointer) {
+    ensureAiLookerPointer();
+    render();
+    return;
+  }
 
   state.choices.looker = direction;
   state.ai.thinking = true;
   render();
 
   window.setTimeout(() => {
-    state.choices.pointer = randomDirection();
     state.ai.thinking = false;
     resolveRound(state.choices.pointer, state.choices.looker);
     render();
-  }, 360);
+  }, 160);
 }
 
 async function connectOnline() {
@@ -944,6 +951,7 @@ function resetRound(resetMessage = true) {
   state.choices.pointer = null;
   state.choices.looker = null;
   state.phase = "input";
+  state.ai.pointerPromptedAt = 0;
   clearCameraLock();
   if (resetMessage) state.message = state.mode === "camera" ? "Camera duel." : "Point. Dodge. Don't match.";
 }
@@ -1531,7 +1539,9 @@ function applyFaceTracking({ x, y, localX = null, localY = null, poseX = null, p
   state.camera.confidence = confidence;
   state.choices.looker = direction === "center" ? null : direction;
   updateAvatarMotion(direction, state.camera.dx, state.camera.dy);
-  renderCameraReadout();
+  const prompted = ensureAiLookerPointer();
+  if (prompted) render();
+  else renderCameraReadout();
   handleCameraDirection(direction, "looker");
 }
 
@@ -1656,7 +1666,11 @@ function shouldCameraSubmit(role = "looker") {
     );
   }
   if (state.mode === "ai") {
-    return state.ai.humanRole === role && !state.ai.thinking;
+    if (state.ai.humanRole !== role || state.ai.thinking) return false;
+    if (role === "looker") {
+      return Boolean(state.choices.pointer) && performance.now() - state.ai.pointerPromptedAt >= AI_DODGE_REACTION_MS;
+    }
+    return true;
   }
   return false;
 }
@@ -1691,6 +1705,7 @@ function clearCameraLock(role = "all") {
 
 function render() {
   updateRuntimeClasses();
+  ensureAiLookerPointer();
 
   els.modeButtons.forEach((button) => {
     const selected = button.dataset.mode === state.mode;
@@ -1813,6 +1828,17 @@ function renderMenuToggle() {
   els.menuToggle.innerHTML = open ? icon("close") : icon("menu");
 }
 
+function ensureAiLookerPointer() {
+  if (state.mode !== "ai" || state.ai.humanRole !== "looker") return false;
+  if (state.phase !== "input" || state.ai.thinking || state.choices.pointer) return false;
+  if (!state.camera.ready || !state.camera.seen) return false;
+
+  state.choices.pointer = randomDirection();
+  state.ai.pointerPromptedAt = performance.now();
+  clearCameraLock("looker");
+  return true;
+}
+
 function modeKicker() {
   if (state.mode === "camera") return "Camera match";
   if (state.mode === "online") return "Phone room";
@@ -1851,7 +1877,7 @@ function modeTitle() {
         : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`;
   }
   if (state.mode === "ai") {
-    if (state.ai.thinking) return "Computer thinking.";
+    if (state.ai.thinking) return state.ai.humanRole === "looker" ? "Locked in." : "Computer thinking.";
     if (!state.camera.ready) return "Start your camera.";
     if (state.ai.humanRole === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
     if (state.ai.humanRole === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
@@ -1861,7 +1887,9 @@ function modeTitle() {
       ? state.camera.handDirection === "center"
         ? "Point to catch them."
         : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`
-      : "Dodge the point.";
+      : state.choices.pointer
+        ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}.`
+        : "Get ready.";
   }
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
   if (!state.choices.pointer && state.choices.looker) return "Pointer turn.";
@@ -1921,7 +1949,9 @@ function renderAi() {
     !state.camera.ready
       ? "Start camera"
       : state.ai.humanRole === "looker"
-        ? "Dodge point"
+        ? state.choices.pointer
+          ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}`
+          : "Get ready"
         : state.ai.thinking
           ? "CPU thinking"
           : "Point to catch";
