@@ -2312,84 +2312,24 @@ function directionIcon(direction) {
 
 function faceAsset() {
   return `
-    <svg class="face-asset" viewBox="0 0 400 400" role="img" aria-label="Game face">
+    <svg class="face-asset" viewBox="0 0 400 400" role="img" aria-label="Smiling game face">
       <defs>
-        <radialGradient id="avatarSkin" cx="45%" cy="34%" r="72%">
-          <stop offset="0%" stop-color="#cf8753"></stop>
-          <stop offset="46%" stop-color="#a9653b"></stop>
-          <stop offset="100%" stop-color="#713d29"></stop>
+        <radialGradient id="emojiFace" cx="38%" cy="30%" r="68%">
+          <stop offset="0%" stop-color="#ffe98a"></stop>
+          <stop offset="58%" stop-color="#f2b544"></stop>
+          <stop offset="100%" stop-color="#dc8b1f"></stop>
         </radialGradient>
-        <radialGradient id="avatarNose" cx="48%" cy="32%" r="72%">
-          <stop offset="0%" stop-color="#d48b58"></stop>
-          <stop offset="56%" stop-color="#aa673f"></stop>
-          <stop offset="100%" stop-color="#6e3825"></stop>
-        </radialGradient>
-        <linearGradient id="avatarHair" x1="92" x2="308" y1="54" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#241816"></stop>
-          <stop offset="56%" stop-color="#14100f"></stop>
-          <stop offset="100%" stop-color="#070606"></stop>
-        </linearGradient>
-        <linearGradient id="avatarShirt" x1="91" x2="303" y1="315" y2="400" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#d8dce0"></stop>
-          <stop offset="58%" stop-color="#a5adb2"></stop>
-          <stop offset="100%" stop-color="#737d83"></stop>
-        </linearGradient>
         <filter id="avatarDepth" x="-20%" y="-20%" width="140%" height="145%">
-          <feDropShadow dx="0" dy="12" stdDeviation="7" flood-color="#161616" flood-opacity="0.22"></feDropShadow>
+          <feDropShadow dx="0" dy="16" stdDeviation="8" flood-color="#161616" flood-opacity="0.2"></feDropShadow>
         </filter>
-        <clipPath id="faceSkinClip">
-          <path d="M89 174c0-77 40-123 111-123s111 46 111 123c0 98-44 158-111 158S89 272 89 174Z"></path>
-        </clipPath>
-        <pattern id="hairDot" width="13" height="13" patternUnits="userSpaceOnUse">
-          <circle cx="4" cy="5" r="2.2" fill="#2a1b16" opacity="0.65"></circle>
-          <circle cx="10" cy="10" r="1.7" fill="#060606" opacity="0.78"></circle>
-        </pattern>
       </defs>
       <g class="avatar-head" filter="url(#avatarDepth)">
-        <path class="face-shoulder" d="M36 398c11-42 38-67 86-78 29-7 52-12 78-12s49 5 78 12c48 11 75 36 86 78H36Z"></path>
-        <path class="face-shirt" d="M85 398c5-58 43-89 115-89s110 31 115 89H85Z"></path>
-        <path class="face-neck-shadow" d="M150 292h101l11 48c-25 23-100 24-124 0l12-48Z"></path>
-        <path class="face-neck" d="M158 286h84l14 60c-29 20-83 20-112 0l14-60Z"></path>
-        <path class="face-shirt-trim" d="M123 340c34 39 120 39 154 0"></path>
-        <ellipse class="face-ear" cx="78" cy="193" rx="28" ry="43"></ellipse>
-        <ellipse class="face-ear" cx="322" cy="193" rx="28" ry="43"></ellipse>
-        <path class="face-ear-line" d="M73 184c18 11 18 32 2 43"></path>
-        <path class="face-ear-line" d="M327 184c-18 11-18 32-2 43"></path>
-        <path class="face-head" d="M89 174c0-77 40-123 111-123s111 46 111 123c0 98-44 158-111 158S89 272 89 174Z"></path>
-        <g clip-path="url(#faceSkinClip)">
-          <ellipse class="face-cheek-glow" cx="145" cy="225" rx="43" ry="25"></ellipse>
-          <ellipse class="face-cheek-glow" cx="255" cy="225" rx="43" ry="25"></ellipse>
-          <path class="face-side-shadow" d="M89 161c19 24 26 65 19 110-18-29-28-66-19-110Z"></path>
-          <path class="face-side-shadow is-right" d="M311 161c-19 24-26 65-19 110 18-29 28-66 19-110Z"></path>
-          <path class="face-forehead-light" d="M129 137c35-19 105-22 143-1-16-44-127-50-143 1Z"></path>
-        </g>
-        <path class="face-hair-shadow" d="M93 153c5-64 44-102 107-102s102 38 107 102c-27-15-64-23-107-23s-80 8-107 23Z"></path>
-        <path class="face-hair" d="M91 150c7-61 47-98 109-98s102 37 109 98c-30-12-66-18-109-18s-79 6-109 18Z"></path>
-        <path class="face-hair-texture" d="M91 150c7-61 47-98 109-98s102 37 109 98c-30-12-66-18-109-18s-79 6-109 18Z"></path>
-        <path class="face-hairline" d="M96 155c29-16 64-23 104-23s75 7 104 23c-31-8-65-12-104-12s-73 4-104 12Z"></path>
+        <circle class="emoji-face" cx="200" cy="210" r="132"></circle>
+        <ellipse class="emoji-glow" cx="158" cy="160" rx="48" ry="28"></ellipse>
         <g class="face-look">
-          <path class="face-forehead-line" d="M158 123c25-6 57-6 83 1"></path>
-          <path class="face-forehead-line is-small" d="M169 138c20-5 43-5 63 0"></path>
-          <path class="face-brow" d="M118 166c22-17 55-18 75-4"></path>
-          <path class="face-brow is-right" d="M211 162c24-13 58-9 75 9"></path>
-          <path class="face-lid" d="M132 194c16-18 42-20 59-2"></path>
-          <path class="face-lid" d="M212 192c18-17 44-15 58 4"></path>
-          <ellipse class="face-eye-white" cx="160" cy="202" rx="29" ry="25"></ellipse>
-          <ellipse class="face-eye-white" cx="241" cy="202" rx="29" ry="25"></ellipse>
-          <circle class="face-iris" cx="163" cy="203" r="15"></circle>
-          <circle class="face-iris" cx="239" cy="203" r="15"></circle>
-          <circle class="face-pupil" cx="163" cy="203" r="8"></circle>
-          <circle class="face-pupil" cx="239" cy="203" r="8"></circle>
-          <circle class="face-highlight" cx="168" cy="197" r="5"></circle>
-          <circle class="face-highlight" cx="244" cy="197" r="5"></circle>
-          <path class="face-under-eye" d="M134 224c18 9 40 8 56-3"></path>
-          <path class="face-under-eye" d="M213 222c17 12 42 12 57 2"></path>
-          <path class="face-nose-fill" d="M190 207c-17 18-25 43-14 58 12 17 50 17 62 1 12-16 4-41-17-59-10 7-21 7-31 0Z"></path>
-          <path class="face-nose-shine" d="M204 213c-10 18-12 33-6 43"></path>
-          <path class="face-nostril" d="M180 255c10 7 21 6 28 0"></path>
-          <path class="face-nostril" d="M218 255c10 5 19 3 25-5"></path>
-          <path class="face-chin-shadow" d="M137 296c35 25 91 25 126-1"></path>
-          <path class="face-smug-smile" d="M153 278c25 18 71 15 95-8"></path>
+          <circle class="emoji-eye" cx="154" cy="190" r="14"></circle>
+          <circle class="emoji-eye" cx="246" cy="190" r="14"></circle>
+          <path class="emoji-smile" d="M139 242c26 43 96 43 122 0"></path>
         </g>
       </g>
       <g data-direction-arrow class="direction-arrow" data-dir="up">

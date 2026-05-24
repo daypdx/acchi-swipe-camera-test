@@ -446,6 +446,30 @@ body.is-swiping .swipe-analog {
   transition: transform 20ms linear;
 }
 
+.emoji-face {
+  fill: url("#emojiFace");
+  stroke: var(--ink);
+  stroke-width: 8;
+}
+
+.emoji-glow {
+  fill: #fff7b8;
+  opacity: 0.45;
+  stroke-width: 0;
+}
+
+.emoji-eye {
+  fill: var(--ink);
+  stroke-width: 0;
+}
+
+.emoji-smile {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
 .face-head {
   fill: url("#avatarSkin");
   stroke: var(--ink);
