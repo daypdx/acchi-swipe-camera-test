@@ -384,11 +384,20 @@ body.is-swiping .swipe-analog {
   filter: drop-shadow(0 16px 0 rgba(22, 22, 22, 0.08));
 }
 
+.avatar-head {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform:
+    translate(var(--avatar-head-x, 0), var(--avatar-head-y, 0))
+    rotate(var(--avatar-tilt, 0deg));
+  transition: transform 45ms linear;
+}
+
 .face-look {
   transform-box: fill-box;
   transform-origin: center;
   transform: translate(var(--avatar-x, 0), var(--avatar-y, 0));
-  transition: transform 80ms linear;
+  transition: transform 45ms linear;
 }
 
 .face-head {

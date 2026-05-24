@@ -1421,8 +1421,13 @@ function hasCameraTracker(role = activeCameraRole()) {
 }
 
 function updateAvatarMotion(direction, dx, dy) {
-  document.documentElement.style.setProperty("--avatar-x", `${clamp(dx, -0.22, 0.22) * 70}px`);
-  document.documentElement.style.setProperty("--avatar-y", `${clamp(dy, -0.2, 0.2) * 72}px`);
+  const headX = clamp(dx, -0.24, 0.24);
+  const headY = clamp(dy, -0.22, 0.22);
+  document.documentElement.style.setProperty("--avatar-head-x", `${headX * 58}px`);
+  document.documentElement.style.setProperty("--avatar-head-y", `${headY * 54}px`);
+  document.documentElement.style.setProperty("--avatar-tilt", `${headX * 10}deg`);
+  document.documentElement.style.setProperty("--avatar-x", `${clamp(dx, -0.22, 0.22) * 46}px`);
+  document.documentElement.style.setProperty("--avatar-y", `${clamp(dy, -0.2, 0.2) * 48}px`);
   document.body.dataset.lookDirection = direction;
 }
 
@@ -1946,28 +1951,30 @@ function faceAsset() {
           <circle cx="200" cy="206" r="126"></circle>
         </clipPath>
       </defs>
-      <circle cx="200" cy="206" r="126" class="face-head"></circle>
-      <path class="face-durag-tail" d="M279 125c34 25 44 63 29 103"></path>
-      <path class="face-durag-tail" d="M291 133c31 7 51 28 61 63"></path>
-      <path class="face-durag" d="M79 180c4-66 51-117 120-119 70-2 120 45 128 113-46 4-83-8-112-39-25 35-70 53-136 45Z"></path>
-      <path class="face-durag-fold" d="M104 151c53 12 116 9 185-10"></path>
-      <path class="face-durag-fold" d="M213 81c2 23 2 44-1 63"></path>
-      <g class="face-look">
-        <path class="face-brow" d="M135 191c16-13 35-13 52-2"></path>
-        <path class="face-brow" d="M223 189c18-11 37-10 51 4"></path>
-        <circle class="face-eye" cx="160" cy="217" r="10"></circle>
-        <circle class="face-eye" cx="242" cy="217" r="10"></circle>
-        <circle class="face-cheek" cx="128" cy="250" r="17"></circle>
-        <circle class="face-cheek" cx="273" cy="250" r="17"></circle>
-        <path class="face-nose" d="M204 218c-9 22-8 34 9 39"></path>
-        <path class="face-mustache" d="M164 263c18-10 29-9 39 2 11-11 24-12 41-2"></path>
-        <path class="face-beard" d="M115 251c13 53 44 80 87 81 43 0 75-27 87-81-12 35-38 55-87 55-48 0-75-20-87-55Z"></path>
-        <path class="face-mouth" d="M158 282c28 22 59 23 91 0"></path>
+      <g class="avatar-head">
+        <circle cx="200" cy="206" r="126" class="face-head"></circle>
+        <path class="face-durag-tail" d="M279 125c34 25 44 63 29 103"></path>
+        <path class="face-durag-tail" d="M291 133c31 7 51 28 61 63"></path>
+        <path class="face-durag" d="M79 180c4-66 51-117 120-119 70-2 120 45 128 113-46 4-83-8-112-39-25 35-70 53-136 45Z"></path>
+        <path class="face-durag-fold" d="M104 151c53 12 116 9 185-10"></path>
+        <path class="face-durag-fold" d="M213 81c2 23 2 44-1 63"></path>
+        <g class="face-look">
+          <path class="face-brow" d="M135 191c16-13 35-13 52-2"></path>
+          <path class="face-brow" d="M223 189c18-11 37-10 51 4"></path>
+          <circle class="face-eye" cx="160" cy="217" r="10"></circle>
+          <circle class="face-eye" cx="242" cy="217" r="10"></circle>
+          <circle class="face-cheek" cx="128" cy="250" r="17"></circle>
+          <circle class="face-cheek" cx="273" cy="250" r="17"></circle>
+          <path class="face-nose" d="M204 218c-9 22-8 34 9 39"></path>
+          <path class="face-mustache" d="M164 263c18-10 29-9 39 2 11-11 24-12 41-2"></path>
+          <path class="face-beard" d="M115 251c13 53 44 80 87 81 43 0 75-27 87-81-12 35-38 55-87 55-48 0-75-20-87-55Z"></path>
+          <path class="face-mouth" d="M158 282c28 22 59 23 91 0"></path>
+        </g>
+        <path d="M68 305c27 41 73 67 132 67 57 0 103-25 130-66" fill="none" stroke="#161616" stroke-width="8" stroke-linecap="round"></path>
       </g>
       <g data-direction-arrow class="direction-arrow" data-dir="up">
         <path class="arrow-fill" d="M200 24 250 79h-30v74h-40V79h-30l50-55Z"></path>
       </g>
-      <path d="M68 305c27 41 73 67 132 67 57 0 103-25 130-66" fill="none" stroke="#161616" stroke-width="8" stroke-linecap="round"></path>
     </svg>
   `;
 }
