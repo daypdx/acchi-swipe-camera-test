@@ -2142,10 +2142,10 @@ function faceAsset() {
           <stop offset="56%" stop-color="#aa673f"></stop>
           <stop offset="100%" stop-color="#6e3825"></stop>
         </radialGradient>
-        <linearGradient id="avatarHair" x1="80" x2="318" y1="33" y2="183" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#2b1a15"></stop>
-          <stop offset="42%" stop-color="#15100e"></stop>
-          <stop offset="100%" stop-color="#050505"></stop>
+        <linearGradient id="avatarHair" x1="92" x2="308" y1="54" y2="150" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#241816"></stop>
+          <stop offset="56%" stop-color="#14100f"></stop>
+          <stop offset="100%" stop-color="#070606"></stop>
         </linearGradient>
         <linearGradient id="avatarShirt" x1="91" x2="303" y1="315" y2="400" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stop-color="#d8dce0"></stop>
@@ -2181,10 +2181,10 @@ function faceAsset() {
           <path class="face-side-shadow is-right" d="M311 161c-19 24-26 65-19 110 18-29 28-66 19-110Z"></path>
           <path class="face-forehead-light" d="M129 137c35-19 105-22 143-1-16-44-127-50-143 1Z"></path>
         </g>
-        <path class="face-hair-shadow" d="M82 160c0-54 20-93 61-116 35-19 84-21 122-4 41 18 62 56 58 111-29-20-68-26-116-20-47 6-91 0-125 29Z"></path>
-        <path class="face-hair" d="M65 156c-7-48 8-86 45-112 33-23 78-31 129-22 51 9 85 34 97 72 7 23 3 51-12 83-34-23-75-31-124-24-50 7-96 1-135 3Z"></path>
-        <path class="face-hair-texture" d="M65 156c-7-48 8-86 45-112 33-23 78-31 129-22 51 9 85 34 97 72 7 23 3 51-12 83-34-23-75-31-124-24-50 7-96 1-135 3Z"></path>
-        <path class="face-hairline" d="M82 160c31-23 74-22 122-19 47 3 85-3 120 36-36-17-79-19-125-12-49 8-88 1-117-5Z"></path>
+        <path class="face-hair-shadow" d="M93 153c5-64 44-102 107-102s102 38 107 102c-27-15-64-23-107-23s-80 8-107 23Z"></path>
+        <path class="face-hair" d="M91 150c7-61 47-98 109-98s102 37 109 98c-30-12-66-18-109-18s-79 6-109 18Z"></path>
+        <path class="face-hair-texture" d="M91 150c7-61 47-98 109-98s102 37 109 98c-30-12-66-18-109-18s-79 6-109 18Z"></path>
+        <path class="face-hairline" d="M96 155c29-16 64-23 104-23s75 7 104 23c-31-8-65-12-104-12s-73 4-104 12Z"></path>
         <g class="face-look">
           <path class="face-forehead-line" d="M158 123c25-6 57-6 83 1"></path>
           <path class="face-forehead-line is-small" d="M169 138c20-5 43-5 63 0"></path>
