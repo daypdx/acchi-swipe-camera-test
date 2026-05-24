@@ -27,7 +27,7 @@ const state = {
   },
   lastRound: null,
   roundNumber: 1,
-  message: "Point. Look. Survive.",
+  message: "Point. Dodge. Don't match.",
   phase: "input",
   camera: {
     ready: false,
@@ -124,7 +124,7 @@ app.innerHTML = `
           <div class="round-header">
             <div class="status">
               <div class="status-label"><span class="status-dot"></span><span data-status-label>Round 1</span></div>
-              <h2 data-round-title>Point. Look. Survive.</h2>
+              <h2 data-round-title>Point. Dodge. Don't match.</h2>
             </div>
             <div class="round-actions" aria-label="Round controls">
               <button type="button" data-action="reset-round" title="Reset round" aria-label="Reset round">${icon("rotate")}</button>
@@ -234,7 +234,7 @@ app.innerHTML = `
               <section class="player-input ai-player">
                 <header>
                   <span class="role-pill" data-ai-pad-role>You point</span>
-                  <span class="choice-state" data-ai-choice-state>Pick a direction</span>
+                  <span class="choice-state" data-ai-choice-state>Point to catch</span>
                 </header>
                 ${swipePad("ai-player")}
               </section>
@@ -267,7 +267,7 @@ app.innerHTML = `
         <span class="log-icon" aria-hidden="true">${icon("bolt")}</span>
         <div>
           <strong data-log-title>First to five wins.</strong>
-          <span data-log-line>Match the looker to score as pointer.</span>
+          <span data-log-line>Pointer scores by matching. Looker scores by dodging.</span>
         </div>
         <div class="rounds" data-rounds aria-label="Recent rounds"></div>
       </aside>
@@ -713,7 +713,7 @@ function handleOnlineMessage(message) {
   state.roundNumber = room.roundNumber;
   state.phase = room.phase;
   state.lastRound = room.lastRound;
-  state.message = room.lastRound?.matched ? "Pointer scores." : "Looker escapes.";
+  state.message = room.lastRound?.matched ? "Caught. Pointer scores." : "Dodged. Looker scores.";
 
   if (room.phase === "reveal") {
     state.choices.pointer = room.choices.pointer;
@@ -926,7 +926,7 @@ function resolveRound(pointer, looker) {
     winner,
     matched,
   };
-  state.message = matched ? "Pointer scores." : "Looker escapes.";
+  state.message = matched ? "Caught. Pointer scores." : "Dodged. Looker scores.";
   state.phase = "reveal";
   state.choices.pointer = pointer;
   state.choices.looker = looker;
@@ -942,7 +942,7 @@ function resetRound(resetMessage = true) {
   state.choices.looker = null;
   state.phase = "input";
   clearCameraLock();
-  if (resetMessage) state.message = state.mode === "camera" ? "Camera duel." : "Point. Look. Survive.";
+  if (resetMessage) state.message = state.mode === "camera" ? "Camera duel." : "Point. Dodge. Don't match.";
 }
 
 async function startCamera() {
@@ -1819,8 +1819,8 @@ function modeKicker() {
 
 function modeControlTitle() {
   if (state.mode === "camera") return "Swipe against the camera";
-  if (state.mode === "online") return state.online.role === "looker" ? "Turn your head on camera" : "Point on camera or swipe";
-  if (state.mode === "ai") return state.ai.humanRole === "pointer" ? "Point on camera or swipe" : "Turn your head on camera";
+  if (state.mode === "online") return state.online.role === "looker" ? "Dodge the pointed direction" : "Point and try to catch them";
+  if (state.mode === "ai") return state.ai.humanRole === "pointer" ? "Point and try to catch them" : "Dodge the pointed direction";
   return "Two swipes decide the round";
 }
 
@@ -1842,9 +1842,9 @@ function modeTitle() {
     if (state.online.role === "looker" && !state.camera.seen) return "Find your face.";
     if (state.online.submitted[state.online.role]) return "Locked in.";
     return state.online.role === "looker"
-      ? "Look away."
+      ? "Dodge the point."
       : state.camera.handDirection === "center"
-        ? "Point up, down, left, or right."
+        ? "Point to catch them."
         : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`;
   }
   if (state.mode === "ai") {
@@ -1856,13 +1856,13 @@ function modeTitle() {
     if (state.ai.humanRole === "looker" && !state.camera.seen) return "Find your face.";
     return state.ai.humanRole === "pointer"
       ? state.camera.handDirection === "center"
-        ? "Point up, down, left, or right."
+        ? "Point to catch them."
         : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`
-      : "Look away.";
+      : "Dodge the point.";
   }
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
   if (!state.choices.pointer && state.choices.looker) return "Pointer turn.";
-  return "Point. Look. Survive.";
+  return "Point. Dodge. Don't match.";
 }
 
 function updatePadStates() {
@@ -1894,8 +1894,8 @@ function onlineChoiceState() {
   if (!state.online.ready) return "Need player two";
   if (!state.camera.ready) return "Start camera";
   if (state.online.submitted[state.online.role]) return "Locked";
-  if (state.online.role === "looker") return "Use camera";
-  return "Point on camera";
+  if (state.online.role === "looker") return "Dodge point";
+  return "Point to catch";
 }
 
 function updateSlot(el, occupied, isYou) {
@@ -1918,10 +1918,10 @@ function renderAi() {
     !state.camera.ready
       ? "Start camera"
       : state.ai.humanRole === "looker"
-        ? "Use camera"
+        ? "Dodge point"
         : state.ai.thinking
           ? "CPU thinking"
-          : "Point on camera";
+          : "Point to catch";
   els.aiPlayer.classList.toggle("is-hidden", state.ai.humanRole === "looker");
 }
 
@@ -1939,13 +1939,13 @@ function updateLog() {
 
   els.logTitle.textContent = state.lastRound
     ? state.lastRound.matched
-      ? "Same direction."
-      : "Different directions."
+      ? "Caught looking same way."
+      : "Looker dodged it."
     : "First to five wins.";
 
   const point = state.lastRound
     ? `${DIRECTION_LABELS[state.lastRound.pointer]} vs ${DIRECTION_LABELS[state.lastRound.looker]}. ${leader}`
-    : "Match the looker to score as pointer.";
+    : "Pointer scores by matching. Looker scores by dodging.";
   els.logLine.textContent = point;
 }
 
