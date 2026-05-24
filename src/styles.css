@@ -1529,6 +1529,311 @@ body.is-camera-looker .camera-panel {
   grid-template-rows: auto auto;
 }
 
+body.is-phone-runtime .app {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+body.is-phone-runtime .topbar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 24;
+  display: flex;
+  justify-content: center;
+  padding: calc(8px + env(safe-area-inset-top)) 10px 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+body.is-phone-runtime .brand,
+body.is-phone-runtime .mode-tabs {
+  display: none;
+}
+
+body.is-phone-runtime .scorebar {
+  width: min(210px, 58vw);
+  justify-self: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid rgba(22, 22, 22, 0.82);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 24px rgba(22, 22, 22, 0.12);
+  pointer-events: auto;
+}
+
+body.is-phone-runtime .score {
+  padding: 5px 8px;
+  text-align: center;
+}
+
+body.is-phone-runtime .score span {
+  display: none;
+}
+
+body.is-phone-runtime .score strong {
+  font-size: 1rem;
+}
+
+body.is-phone-runtime .layout {
+  padding: 0;
+  background: #f8f7f2;
+}
+
+body.is-phone-runtime .arena {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+body.is-phone-runtime .stage {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  grid-template-rows: 1fr;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% 58%, rgba(242, 181, 68, 0.22), transparent 38%),
+    #f8f7f2;
+}
+
+body.is-phone-runtime .round-header {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  display: block;
+  padding: 0;
+  pointer-events: none;
+}
+
+body.is-phone-runtime .status-label {
+  display: none;
+}
+
+body.is-phone-runtime .status h2 {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 18;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(22, 22, 22, 0.72);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  box-shadow: 0 10px 28px rgba(22, 22, 22, 0.12);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+body.is-phone-runtime.is-controls-needed .status h2 {
+  display: none;
+}
+
+body.is-phone-runtime .round-actions {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 28;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+body.is-phone-runtime .round-actions button {
+  width: 34px;
+  min-height: 34px;
+  border: 1px solid rgba(22, 22, 22, 0.72);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 6px 18px rgba(22, 22, 22, 0.12);
+}
+
+body.is-phone-runtime .face-scene {
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  padding: calc(48px + env(safe-area-inset-top)) 10px calc(60px + env(safe-area-inset-bottom));
+}
+
+body.is-phone-runtime.is-controls-needed .face-scene {
+  padding-bottom: min(28dvh, 220px);
+}
+
+body.is-phone-runtime .face-asset {
+  width: min(92vw, 70dvh);
+  max-height: 76dvh;
+}
+
+body.is-phone-runtime .result-strip {
+  display: none;
+}
+
+body.is-phone-runtime .direction-arrow {
+  filter: drop-shadow(0 8px 0 rgba(22, 22, 22, 0.16));
+}
+
+body.is-phone-runtime .direction-arrow.is-visible {
+  animation: arrow-pop 260ms ease both;
+}
+
+body.is-phone-runtime .arrow-fill {
+  fill: var(--tomato);
+}
+
+@keyframes arrow-pop {
+  0% {
+    opacity: 0;
+    scale: 0.78;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+body.is-phone-runtime .controls {
+  position: fixed;
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: 26;
+  display: grid;
+  min-height: 0;
+  max-height: min(26dvh, 220px);
+  overflow: hidden;
+  border: 1px solid rgba(22, 22, 22, 0.8);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 34px rgba(22, 22, 22, 0.16);
+}
+
+body.is-phone-runtime:not(.is-controls-needed) .controls {
+  display: none;
+}
+
+body.is-phone-runtime .control-top {
+  display: none;
+}
+
+body.is-phone-runtime .control-body {
+  overflow: hidden;
+}
+
+body.is-phone-runtime .online-controls,
+body.is-phone-runtime .ai-controls,
+body.is-phone-runtime .camera-controls {
+  min-height: 0;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+}
+
+body.is-phone-runtime.is-camera-looker .ai-controls.is-active,
+body.is-phone-runtime.is-camera-looker.is-room-ready .online-controls.is-active {
+  display: none;
+}
+
+body.is-phone-runtime .room-panel,
+body.is-phone-runtime .ai-options {
+  display: block;
+  border: 0;
+}
+
+body.is-phone-runtime .room-card {
+  gap: 8px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+}
+
+body.is-phone-runtime .room-card + .room-card,
+body.is-phone-runtime .share-row,
+body.is-phone-runtime .player-input,
+body.is-phone-runtime .ai-options {
+  display: none;
+}
+
+body.is-phone-runtime .room-card header {
+  display: none;
+}
+
+body.is-phone-runtime .room-code-display {
+  min-height: 32px;
+  border-width: 1px;
+  font-size: 1.3rem;
+  background: transparent;
+}
+
+body.is-phone-runtime .room-actions {
+  grid-template-columns: minmax(76px, 0.9fr) minmax(0, 1.1fr) minmax(70px, 0.8fr);
+  align-items: end;
+  gap: 8px;
+}
+
+body.is-phone-runtime .solid-action,
+body.is-phone-runtime .ghost-action {
+  min-height: 40px;
+  border-width: 1px;
+  box-shadow: none;
+  font-size: 0.84rem;
+}
+
+body.is-phone-runtime .room-code-entry {
+  gap: 3px;
+}
+
+body.is-phone-runtime .room-code-entry span {
+  font-size: 0.58rem;
+}
+
+body.is-phone-runtime .room-code-entry input {
+  min-height: 40px;
+  border-width: 1px;
+  font-size: 1rem;
+}
+
+body.is-phone-runtime .camera-controls {
+  display: none;
+}
+
+body.is-phone-runtime.is-camera-looker .camera-controls.is-active {
+  display: grid;
+}
+
+body.is-phone-runtime .camera-panel {
+  display: block;
+  border: 0;
+  background: transparent;
+}
+
+body.is-phone-runtime .camera-panel header {
+  padding: 10px;
+  border: 0;
+  justify-content: center;
+}
+
+body.is-phone-runtime .camera-panel .role-pill,
+body.is-phone-runtime .tracking-readout,
+body.is-phone-runtime .camera-swipe {
+  display: none;
+}
+
+body.is-phone-runtime .camera-action {
+  min-width: 152px;
+  min-height: 48px;
+  border-width: 1px;
+  box-shadow: none;
+  font-size: 1rem;
+}
+
+body.is-phone-runtime .toast {
+  z-index: 40;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  border-width: 1px;
+  box-shadow: 0 12px 30px rgba(22, 22, 22, 0.16);
+}
+
 .log {
   border: 2px solid var(--ink);
   background: var(--panel);

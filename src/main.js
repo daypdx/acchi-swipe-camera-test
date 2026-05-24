@@ -1175,9 +1175,11 @@ function render() {
 
   const shownDirection = DIRECTIONS.includes(state.choices.pointer)
     ? state.choices.pointer
-    : state.lastRound?.pointer || "up";
-  els.arrow.dataset.dir = shownDirection;
-  els.arrow.classList.toggle("is-visible", Boolean(state.choices.pointer || state.lastRound));
+    : state.phase === "reveal"
+      ? state.lastRound?.pointer
+      : null;
+  els.arrow.dataset.dir = shownDirection || "up";
+  els.arrow.classList.toggle("is-visible", Boolean(shownDirection));
 
   updatePadStates();
   renderOnline();
@@ -1202,6 +1204,10 @@ function updateRuntimeClasses() {
   document.body.classList.toggle("is-looker-role", looker);
   document.body.classList.toggle("is-pointer-role", pointerActive);
   document.body.classList.toggle("is-pointer-gesture", isPointerGestureActive());
+  document.body.classList.toggle("is-controls-needed", shouldShowPhoneControls());
+  document.body.classList.toggle("is-online-mode", state.mode === "online");
+  document.body.classList.toggle("is-ai-mode", state.mode === "ai");
+  document.body.classList.toggle("is-reveal", state.phase === "reveal");
   if (els.phoneUrl) els.phoneUrl.textContent = window.location.href.replace("localhost", window.location.hostname);
 }
 
@@ -1217,6 +1223,21 @@ function isPointerGestureActive() {
     (state.mode === "online" && state.online.role === "pointer") ||
     (state.mode === "ai" && state.ai.humanRole === "pointer")
   );
+}
+
+function shouldShowPhoneControls() {
+  if (!isPhoneRuntime()) return true;
+
+  if (state.mode === "online") {
+    if (!state.online.roomCode || !state.online.ready || !state.online.role) return true;
+    return state.online.role === "looker" && !state.camera.ready;
+  }
+
+  if (state.mode === "ai") {
+    return state.ai.humanRole === "looker" && !state.camera.ready;
+  }
+
+  return true;
 }
 
 function modeKicker() {
