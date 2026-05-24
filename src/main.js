@@ -51,6 +51,12 @@ const state = {
     confidence: 0,
     dx: 0,
     dy: 0,
+    smoothDx: 0,
+    smoothDy: 0,
+    localX: 0,
+    localY: 0,
+    poseX: 0,
+    poseY: 0,
     seen: false,
     handSeen: false,
     handDirection: "center",
@@ -977,6 +983,8 @@ async function startCamera() {
     state.camera.handSeen = false;
     state.camera.direction = "center";
     state.camera.handDirection = "center";
+    state.camera.smoothDx = 0;
+    state.camera.smoothDy = 0;
     state.camera.lastSeenAt = 0;
     state.camera.lastHandSeenAt = 0;
     clearCameraLock();
@@ -1138,7 +1146,7 @@ async function createFaceLandmarker(FaceLandmarker, fileset) {
     "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task";
   const options = {
     outputFaceBlendshapes: false,
-    outputFacialTransformationMatrixes: false,
+    outputFacialTransformationMatrixes: true,
     runningMode: "VIDEO",
     numFaces: 1,
   };
@@ -1173,6 +1181,12 @@ function calibrateCamera() {
   state.camera.baseline = {
     x: state.camera.noseX,
     y: state.camera.noseY,
+    localX: state.camera.localX ?? state.camera.noseX,
+    localY: state.camera.localY ?? state.camera.noseY,
+    poseX: state.camera.poseX ?? state.camera.localX ?? state.camera.noseX,
+    poseY: state.camera.poseY ?? state.camera.localY ?? state.camera.noseY,
+    usesLocal: state.camera.usesLocalTracking ?? false,
+    usesPose: state.camera.usesPoseTracking ?? false,
     width: state.camera.faceWidth || 1,
     height: state.camera.faceHeight || 1,
   };
@@ -1202,9 +1216,10 @@ function detectFace() {
     try {
       const result = state.camera.landmarker.detectForVideo(video, now);
       const landmarks = result.faceLandmarks?.[0];
+      const transform = result.facialTransformationMatrixes?.[0];
       drawFaceOverlay(landmarks);
       if (landmarks) {
-        applyMediaPipeLandmarks(landmarks);
+        applyMediaPipeLandmarks(landmarks, transform);
         state.camera.lastLandmarkAt = now;
         tracked = true;
       }
@@ -1303,7 +1318,7 @@ function markHandMissing(now) {
   renderCameraReadout();
 }
 
-function applyMediaPipeLandmarks(landmarks) {
+function applyMediaPipeLandmarks(landmarks, transform = null) {
   const nose = landmarks[1] || landmarks[4];
   const left = landmarks[454] || landmarks[356];
   const right = landmarks[234] || landmarks[127];
@@ -1315,13 +1330,86 @@ function applyMediaPipeLandmarks(landmarks) {
     return;
   }
 
+  const faceWidth = Math.max(0.001, Math.abs(left.x - right.x));
+  const faceHeight = Math.max(0.001, Math.abs(bottom.y - top.y));
+  const faceCenterX = (left.x + right.x) / 2;
+  const faceCenterY = (top.y + bottom.y) / 2;
+  const localX = (nose.x - faceCenterX) / faceWidth;
+  const localY = (nose.y - faceCenterY) / faceHeight;
+  const pose = estimateHeadPose({
+    transform,
+    localX,
+    localY,
+    faceWidth,
+    faceHeight,
+    top,
+    bottom,
+    left,
+    right,
+  });
+
   applyFaceTracking({
     x: nose.x,
     y: nose.y,
-    width: Math.max(0.001, Math.abs(left.x - right.x)),
-    height: Math.max(0.001, Math.abs(bottom.y - top.y)),
+    localX,
+    localY,
+    poseX: pose?.x ?? null,
+    poseY: pose?.y ?? null,
+    poseMode: pose?.mode ?? "",
+    width: faceWidth,
+    height: faceHeight,
     mode: "Face",
   });
+}
+
+function estimateHeadPose({ transform }) {
+  const matrix = readTransformMatrix(transform);
+  const pose = matrix ? eulerFromMatrix(matrix, false) || eulerFromMatrix(matrix, true) : null;
+  if (!pose) return null;
+
+  return {
+    x: clamp(pose.yaw / 90, -1, 1),
+    y: clamp(pose.pitch / 90, -1, 1),
+    mode: "Pose",
+  };
+}
+
+function readTransformMatrix(transform) {
+  if (!transform) return null;
+  const candidates = [
+    transform.data,
+    transform.matrix,
+    transform.packedData,
+    transform.packedDataList,
+    transform,
+  ];
+
+  if (typeof transform.getAsFloat32Array === "function") {
+    candidates.unshift(transform.getAsFloat32Array());
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate === "function") continue;
+    const data = Array.from(candidate);
+    if (data.length >= 16 && data.every(Number.isFinite)) return data;
+  }
+
+  return null;
+}
+
+function eulerFromMatrix(matrix, columnMajor) {
+  const at = (row, col) => matrix[columnMajor ? col * 4 + row : row * 4 + col];
+  const r02 = at(0, 2);
+  const r22 = at(2, 2);
+  const r12 = at(1, 2);
+  const r10 = at(1, 0);
+  const r11 = at(1, 1);
+  if (![r02, r22, r12, r10, r11].every(Number.isFinite)) return null;
+
+  return {
+    yaw: (Math.atan2(r02, r22) * 180) / Math.PI,
+    pitch: (Math.atan2(-r12, Math.hypot(r10, r11)) * 180) / Math.PI,
+  };
 }
 
 function runBlazeFaceTracker(video, now) {
@@ -1372,40 +1460,70 @@ function markFaceMissing(now) {
   state.camera.direction = "center";
   state.camera.confidence = 0;
   state.camera.trackingMode = "";
+  state.camera.smoothDx = 0;
+  state.camera.smoothDy = 0;
   updateAvatarMotion("center", 0, 0);
   renderCameraReadout();
 }
 
-function applyFaceTracking({ x, y, width, height, mode }) {
+function applyFaceTracking({ x, y, localX = null, localY = null, poseX = null, poseY = null, poseMode = "", width, height, mode }) {
   state.camera.noseX = x;
   state.camera.noseY = y;
+  state.camera.localX = localX ?? x;
+  state.camera.localY = localY ?? y;
+  state.camera.usesLocalTracking = localX !== null && localY !== null;
+  state.camera.poseX = poseX ?? state.camera.localX;
+  state.camera.poseY = poseY ?? state.camera.localY;
+  state.camera.usesPoseTracking = poseX !== null && poseY !== null;
   state.camera.faceWidth = width;
   state.camera.faceHeight = height;
   state.camera.seen = true;
   state.camera.lastSeenAt = performance.now();
-  state.camera.trackingMode = mode;
-  state.camera.trackerNote = `${mode} tracking.`;
+  state.camera.trackingMode = poseMode || mode;
+  state.camera.trackerNote = `${state.camera.trackingMode} tracking.`;
 
-  if (!state.camera.baseline) calibrateCamera();
+  if (
+    !state.camera.baseline ||
+    state.camera.baseline.usesLocal !== state.camera.usesLocalTracking ||
+    state.camera.baseline.usesPose !== state.camera.usesPoseTracking
+  ) {
+    calibrateCamera();
+  }
 
-  const dxRaw = (x - state.camera.baseline.x) / state.camera.baseline.width;
-  const dyRaw = (y - state.camera.baseline.y) / state.camera.baseline.height;
-  const dx = -dxRaw;
-  const dy = dyRaw;
-  const threshold = 0.07;
+  const usesPose = state.camera.usesPoseTracking;
+  const usesLocal = state.camera.usesLocalTracking;
+  const liveX = usesPose ? state.camera.poseX : usesLocal ? state.camera.localX : x;
+  const liveY = usesPose ? state.camera.poseY : usesLocal ? state.camera.localY : y;
+  const baseX = usesPose ? state.camera.baseline.poseX : usesLocal ? state.camera.baseline.localX : state.camera.baseline.x;
+  const baseY = usesPose ? state.camera.baseline.poseY : usesLocal ? state.camera.baseline.localY : state.camera.baseline.y;
+  const scaleX = usesPose || usesLocal ? 1 : state.camera.baseline.width;
+  const scaleY = usesPose || usesLocal ? 1 : state.camera.baseline.height;
+  let rawX = (liveX - baseX) / scaleX;
+  let rawY = (liveY - baseY) / scaleY;
+
+  if (usesPose && usesLocal) {
+    rawX = alignPoseSignal(rawX, state.camera.localX - state.camera.baseline.localX, "x");
+    rawY = alignPoseSignal(rawY, state.camera.localY - state.camera.baseline.localY, "y");
+  }
+
+  const dxRaw = -rawX;
+  const dyRaw = rawY;
+  const dx = smoothHeadAxis("x", shapeHeadAxis(dxRaw, usesPose ? 1.18 : usesLocal ? 8.4 : 2.25));
+  const dy = smoothHeadAxis("y", shapeHeadAxis(dyRaw, usesPose ? 1.16 : usesLocal ? 7.8 : 2.15));
+  const threshold = 0.24;
   let direction = "center";
   let confidence = 0;
 
   if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
     direction = dx > 0 ? "right" : "left";
-    confidence = Math.min(1, Math.abs(dx) / 0.22);
+    confidence = Math.min(1, Math.abs(dx) / 0.72);
   } else if (Math.abs(dy) > threshold) {
     direction = dy > 0 ? "down" : "up";
-    confidence = Math.min(1, Math.abs(dy) / 0.18);
+    confidence = Math.min(1, Math.abs(dy) / 0.68);
   }
 
-  state.camera.dx = clamp(dx, -0.3, 0.3);
-  state.camera.dy = clamp(dy, -0.3, 0.3);
+  state.camera.dx = clamp(dx, -1, 1);
+  state.camera.dy = clamp(dy, -1, 1);
   state.camera.direction = direction;
   state.camera.confidence = confidence;
   state.choices.looker = direction === "center" ? null : direction;
@@ -1420,14 +1538,48 @@ function hasCameraTracker(role = activeCameraRole()) {
   return Boolean(state.camera.handLandmarker || state.camera.landmarker || state.camera.blazeModel);
 }
 
+function alignPoseSignal(poseRaw, localRaw, axis) {
+  const localNoiseFloor = axis === "x" ? 0.008 : 0.007;
+  if (Math.abs(localRaw) <= localNoiseFloor) return poseRaw;
+  const localBoost = localRaw * (axis === "x" ? 6.8 : 7.2);
+  const signedPose = Math.sign(localRaw) * Math.abs(poseRaw);
+  return Math.abs(localBoost) > Math.abs(signedPose) * 1.15 ? localBoost : signedPose;
+}
+
+function shapeHeadAxis(value, sensitivity) {
+  const deadzone = 0.018;
+  const magnitude = Math.abs(value);
+  if (magnitude <= deadzone) return 0;
+  const normalized = (magnitude - deadzone) * sensitivity;
+  return Math.sign(value) * clamp(normalized, 0, 1);
+}
+
+function smoothHeadAxis(axis, next) {
+  const key = axis === "x" ? "smoothDx" : "smoothDy";
+  const previous = state.camera[key] || 0;
+  const delta = Math.abs(next - previous);
+  const alpha = delta > 0.42 ? 0.58 : delta > 0.16 ? 0.42 : delta > 0.05 ? 0.3 : 0.18;
+  const smoothed = Math.abs(next) < 0.02 && Math.abs(previous) < 0.06 ? 0 : previous + (next - previous) * alpha;
+  state.camera[key] = smoothed;
+  return smoothed;
+}
+
 function updateAvatarMotion(direction, dx, dy) {
-  const headX = clamp(dx, -0.24, 0.24);
-  const headY = clamp(dy, -0.22, 0.22);
+  const headX = clamp(dx, -1, 1);
+  const headY = clamp(dy, -1, 1);
+  const yaw = headX * 90;
+  const pitch = -headY * 86;
+  const compressionX = 1 - Math.abs(headX) * 0.34;
+  const compressionY = 1 - Math.abs(headY) * 0.1;
   document.documentElement.style.setProperty("--avatar-head-x", `${headX * 58}px`);
-  document.documentElement.style.setProperty("--avatar-head-y", `${headY * 54}px`);
-  document.documentElement.style.setProperty("--avatar-tilt", `${headX * 10}deg`);
-  document.documentElement.style.setProperty("--avatar-x", `${clamp(dx, -0.22, 0.22) * 46}px`);
-  document.documentElement.style.setProperty("--avatar-y", `${clamp(dy, -0.2, 0.2) * 48}px`);
+  document.documentElement.style.setProperty("--avatar-head-y", `${headY * 52}px`);
+  document.documentElement.style.setProperty("--avatar-yaw", `${yaw}deg`);
+  document.documentElement.style.setProperty("--avatar-pitch", `${pitch}deg`);
+  document.documentElement.style.setProperty("--avatar-tilt", `${headX * 8}deg`);
+  document.documentElement.style.setProperty("--avatar-scale-x", `${compressionX}`);
+  document.documentElement.style.setProperty("--avatar-scale-y", `${compressionY}`);
+  document.documentElement.style.setProperty("--avatar-x", `${headX * 54}px`);
+  document.documentElement.style.setProperty("--avatar-y", `${headY * 50}px`);
   document.body.dataset.lookDirection = direction;
 }
 
