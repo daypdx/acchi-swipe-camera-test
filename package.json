@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "selfsigned": "^5.5.0",
+    "three": "^0.184.0",
     "ws": "^8.21.0"
   }
 }

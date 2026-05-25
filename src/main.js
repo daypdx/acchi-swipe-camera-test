@@ -1,4 +1,21 @@
 import "./styles.css";
+import {
+  CatmullRomCurve3,
+  CircleGeometry,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Scene,
+  SphereGeometry,
+  SRGBColorSpace,
+  TubeGeometry,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 
 const DIRECTIONS = ["up", "right", "down", "left"];
 const AI_DODGE_REACTION_MS = 450;
@@ -114,6 +131,15 @@ const state = {
   },
   toastTimer: 0,
 };
+
+const avatarMotion = {
+  targetX: 0,
+  targetY: 0,
+  currentX: 0,
+  currentY: 0,
+};
+
+let avatar3d = null;
 
 const app = document.querySelector("#app");
 
@@ -393,11 +419,13 @@ const els = {
   phoneUrl: document.querySelector("[data-phone-url]"),
   swipeAnalog: document.querySelector("[data-swipe-analog]"),
   menuToggle: document.querySelector('[data-action="phone-menu"]'),
+  avatarCanvas: document.querySelector("[data-avatar-canvas]"),
 };
 
 init();
 
 function init() {
+  initAvatar3d();
   bindModes();
   bindActions();
   bindInputs();
@@ -1733,6 +1761,7 @@ function updateAvatarMotion(direction, dx, dy) {
   document.documentElement.style.setProperty("--avatar-x", `${headX * 54}px`);
   document.documentElement.style.setProperty("--avatar-y", `${headY * 50}px`);
   document.body.dataset.lookDirection = direction;
+  updateThreeAvatarMotion(headX, headY);
 }
 
 function syncAvatarMotion() {
@@ -1769,6 +1798,165 @@ function setAvatarDirection(direction) {
 
 function resetAvatarMotion() {
   updateAvatarMotion("center", 0, 0);
+}
+
+function initAvatar3d() {
+  if (!els.avatarCanvas) return;
+
+  try {
+    const renderer = new WebGLRenderer({
+      canvas: els.avatarCanvas,
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = SRGBColorSpace;
+
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(30, 1, 0.1, 100);
+    camera.position.set(0, 0, 8.4);
+
+    const root = new Group();
+    scene.add(root);
+
+    scene.add(new HemisphereLight(0xfff5d5, 0xb66b25, 2.4));
+    const keyLight = new DirectionalLight(0xffffff, 2.7);
+    keyLight.position.set(-3.5, 4, 5);
+    scene.add(keyLight);
+    const rimLight = new DirectionalLight(0xffd27a, 1.1);
+    rimLight.position.set(3.5, 2, -2);
+    scene.add(rimLight);
+
+    const shadow = new Mesh(
+      new CircleGeometry(1.95, 64),
+      new MeshBasicMaterial({
+        color: 0x161616,
+        transparent: true,
+        opacity: 0.15,
+        depthWrite: false,
+      }),
+    );
+    shadow.position.set(0, -2.35, -0.75);
+    shadow.scale.set(1.15, 0.18, 1);
+    scene.add(shadow);
+
+    const faceMaterial = new MeshStandardMaterial({
+      color: 0xf6bd3b,
+      roughness: 0.46,
+      metalness: 0,
+      emissive: 0x2f1700,
+      emissiveIntensity: 0.05,
+    });
+    const head = new Mesh(new SphereGeometry(2, 72, 48), faceMaterial);
+    head.scale.set(1, 1.03, 1);
+    root.add(head);
+
+    const glow = new Mesh(
+      new SphereGeometry(0.72, 32, 16),
+      new MeshBasicMaterial({
+        color: 0xfff7b8,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+      }),
+    );
+    glow.position.set(-0.7, 0.78, 1.62);
+    glow.scale.set(1.35, 0.6, 0.16);
+    root.add(glow);
+
+    const eyeMaterial = new MeshStandardMaterial({ color: 0x17120d, roughness: 0.35 });
+    const eyeGeometry = new SphereGeometry(0.2, 32, 24);
+    const leftEye = new Mesh(eyeGeometry, eyeMaterial);
+    const rightEye = new Mesh(eyeGeometry, eyeMaterial);
+    leftEye.position.set(-0.67, 0.34, 1.84);
+    rightEye.position.set(0.67, 0.34, 1.84);
+    root.add(leftEye, rightEye);
+
+    const eyeSparkMaterial = new MeshBasicMaterial({ color: 0xffffff });
+    const eyeSparkGeometry = new SphereGeometry(0.055, 14, 10);
+    const leftSpark = new Mesh(eyeSparkGeometry, eyeSparkMaterial);
+    const rightSpark = new Mesh(eyeSparkGeometry, eyeSparkMaterial);
+    leftSpark.position.set(-0.74, 0.42, 1.98);
+    rightSpark.position.set(0.6, 0.42, 1.98);
+    root.add(leftSpark, rightSpark);
+
+    const smileCurve = new CatmullRomCurve3([
+      new Vector3(-0.78, -0.46, 1.78),
+      new Vector3(-0.36, -0.76, 1.96),
+      new Vector3(0, -0.84, 2.03),
+      new Vector3(0.36, -0.76, 1.96),
+      new Vector3(0.78, -0.46, 1.78),
+    ]);
+    const smile = new Mesh(
+      new TubeGeometry(smileCurve, 36, 0.055, 14, false),
+      new MeshStandardMaterial({ color: 0x22120d, roughness: 0.42 }),
+    );
+    root.add(smile);
+
+    const cheekMaterial = new MeshBasicMaterial({
+      color: 0xff9e62,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+    });
+    const cheekGeometry = new SphereGeometry(0.28, 24, 14);
+    const leftCheek = new Mesh(cheekGeometry, cheekMaterial);
+    const rightCheek = new Mesh(cheekGeometry, cheekMaterial);
+    leftCheek.position.set(-1.08, -0.34, 1.62);
+    rightCheek.position.set(1.08, -0.34, 1.62);
+    leftCheek.scale.set(1.28, 0.65, 0.1);
+    rightCheek.scale.set(1.28, 0.65, 0.1);
+    root.add(leftCheek, rightCheek);
+
+    avatar3d = { renderer, scene, camera, root, shadow, width: 0, height: 0 };
+    resizeAvatar3d();
+    animateAvatar3d();
+  } catch {
+    els.avatarCanvas.closest(".avatar-3d")?.classList.add("is-3d-unavailable");
+  }
+}
+
+function updateThreeAvatarMotion(x, y) {
+  avatarMotion.targetX = clamp(x, -1, 1);
+  avatarMotion.targetY = clamp(y, -1, 1);
+}
+
+function animateAvatar3d() {
+  if (!avatar3d) return;
+  avatarMotion.currentX += (avatarMotion.targetX - avatarMotion.currentX) * 0.2;
+  avatarMotion.currentY += (avatarMotion.targetY - avatarMotion.currentY) * 0.2;
+
+  const x = avatarMotion.currentX;
+  const y = avatarMotion.currentY;
+  avatar3d.root.rotation.y = x * 0.72;
+  avatar3d.root.rotation.x = y * 0.58;
+  avatar3d.root.rotation.z = -x * 0.09;
+  avatar3d.root.position.x = x * 0.45;
+  avatar3d.root.position.y = -y * 0.32;
+  avatar3d.root.scale.x = 1 - Math.abs(x) * 0.05;
+  avatar3d.root.scale.y = 1 - Math.abs(y) * 0.04;
+  avatar3d.shadow.scale.x = 1.15 - Math.abs(x) * 0.16;
+  avatar3d.shadow.position.x = x * 0.16;
+
+  resizeAvatar3d();
+  avatar3d.renderer.render(avatar3d.scene, avatar3d.camera);
+  window.requestAnimationFrame(animateAvatar3d);
+}
+
+function resizeAvatar3d() {
+  if (!avatar3d || !els.avatarCanvas) return;
+  const rect = els.avatarCanvas.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width));
+  const height = Math.max(1, Math.round(rect.height));
+  if (avatar3d.width === width && avatar3d.height === height) return;
+  avatar3d.width = width;
+  avatar3d.height = height;
+  avatar3d.renderer.setSize(width, height, false);
+  avatar3d.camera.aspect = width / height;
+  avatar3d.camera.updateProjectionMatrix();
 }
 
 function drawFaceOverlay(landmarks) {
@@ -2376,30 +2564,12 @@ function directionIcon(direction) {
 
 function faceAsset() {
   return `
-    <svg class="face-asset" viewBox="0 0 400 400" role="img" aria-label="Smiling game face">
-      <defs>
-        <radialGradient id="emojiFace" cx="38%" cy="30%" r="68%">
-          <stop offset="0%" stop-color="#ffe98a"></stop>
-          <stop offset="58%" stop-color="#f2b544"></stop>
-          <stop offset="100%" stop-color="#dc8b1f"></stop>
-        </radialGradient>
-        <filter id="avatarDepth" x="-20%" y="-20%" width="140%" height="145%">
-          <feDropShadow dx="0" dy="16" stdDeviation="8" flood-color="#161616" flood-opacity="0.2"></feDropShadow>
-        </filter>
-      </defs>
-      <g class="avatar-head" filter="url(#avatarDepth)">
-        <circle class="emoji-face" cx="200" cy="210" r="132"></circle>
-        <ellipse class="emoji-glow" cx="158" cy="160" rx="48" ry="28"></ellipse>
-        <g class="face-look">
-          <circle class="emoji-eye" cx="154" cy="190" r="14"></circle>
-          <circle class="emoji-eye" cx="246" cy="190" r="14"></circle>
-          <path class="emoji-smile" d="M139 242c26 43 96 43 122 0"></path>
-        </g>
-      </g>
-      <g data-direction-arrow class="direction-arrow" data-dir="up">
-        <path class="arrow-fill" d="M200 24 250 79h-30v74h-40V79h-30l50-55Z"></path>
-      </g>
-    </svg>
+    <div class="face-asset avatar-3d" role="img" aria-label="3D smiling emoji game face">
+      <canvas class="avatar-canvas" data-avatar-canvas></canvas>
+      <div data-direction-arrow class="direction-arrow" data-dir="up" aria-hidden="true">
+        ${directionIcon("up")}
+      </div>
+    </div>
   `;
 }
 
