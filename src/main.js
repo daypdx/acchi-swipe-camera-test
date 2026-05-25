@@ -1738,6 +1738,15 @@ function updateAvatarMotion(direction, dx, dy) {
 function syncAvatarMotion() {
   if (shouldTrackLooker() && state.camera.seen) return;
 
+  const pointerControlled =
+    (state.mode === "ai" && state.ai.humanRole === "pointer") ||
+    (state.mode === "online" && state.online.role === "pointer");
+  const pointerDirection = state.choices.pointer || (state.phase === "reveal" ? state.lastRound?.pointer : null);
+  if (pointerControlled && DIRECTIONS.includes(pointerDirection)) {
+    setAvatarDirection(pointerDirection);
+    return;
+  }
+
   if (state.phase === "reveal" && state.lastRound?.looker) {
     setAvatarDirection(state.lastRound.looker);
     return;
