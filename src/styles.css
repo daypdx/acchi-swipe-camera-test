@@ -317,6 +317,50 @@ body.is-swiping .swipe-analog {
   letter-spacing: 0;
 }
 
+.top-role-switch {
+  display: none;
+}
+
+body.is-ai-mode .top-role-switch {
+  position: absolute;
+  top: 84px;
+  right: 16px;
+  z-index: 6;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.top-role-switch button {
+  min-height: 34px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.top-role-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.top-role-switch svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
 .layout {
   width: min(1160px, calc(100% - 32px));
   margin: 0 auto;
@@ -1939,20 +1983,31 @@ body.is-phone-runtime .score strong {
 }
 
 body.is-phone-runtime .role-badge {
+  display: none;
+}
+
+body.is-phone-runtime.is-ai-mode .top-role-switch {
   position: fixed;
   top: calc(48px + env(safe-area-inset-top));
-  left: max(10px, env(safe-area-inset-left));
-  z-index: 31;
-  min-height: 34px;
-  max-width: 34vw;
-  padding: 5px 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  left: 50%;
+  right: auto;
+  z-index: 33;
+  width: min(230px, 58vw);
+  transform: translateX(-50%);
   border-color: rgba(22, 22, 22, 0.78);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 22px rgba(22, 22, 22, 0.13);
-  font-size: 0.62rem;
+}
+
+body.is-phone-runtime .top-role-switch button {
+  min-height: 34px;
+  padding: 0 6px;
+  font-size: 0.64rem;
+}
+
+body.is-phone-runtime .top-role-switch svg {
+  width: 16px;
+  height: 16px;
 }
 
 body.is-phone-runtime .layout {

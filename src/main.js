@@ -151,6 +151,10 @@ app.innerHTML = `
             </div>
           </div>
           <div class="role-badge" data-role-badge>You are the Pointer</div>
+          <div class="top-role-switch" aria-label="Choose your role">
+            <button type="button" data-ai-role="pointer" aria-pressed="true">${icon("pointer")}Pointer</button>
+            <button type="button" data-ai-role="looker" aria-pressed="false">${icon("face")}Looker</button>
+          </div>
 
           <div class="face-scene" aria-hidden="true">
             ${faceAsset()}
@@ -476,7 +480,7 @@ function bindActions() {
         calibrateCamera();
         toast("Camera centered.");
       } else {
-        toast("Show your pointing hand.");
+        toast("Swipe anywhere to point.");
       }
       render();
       return;
@@ -546,15 +550,7 @@ function bindActions() {
 
   els.aiRoleButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      state.ai.humanRole = button.dataset.aiRole;
-      state.ai.thinking = false;
-      state.ai.pointerPromptedAt = 0;
-      state.scores.pointer = 0;
-      state.scores.looker = 0;
-      state.roundNumber = 1;
-      state.lastRound = null;
-      resetRound(false);
-      state.ui.menuOpen = shouldShowPhoneControls();
+      setAiRole(button.dataset.aiRole);
       render();
     });
   });
@@ -839,6 +835,46 @@ function otherRole(role) {
   return role === "pointer" ? "looker" : "pointer";
 }
 
+function setAiRole(role) {
+  if (!["pointer", "looker"].includes(role)) return;
+
+  if (role === "pointer") {
+    stopCameraStream();
+    state.camera.ready = false;
+    state.camera.loading = false;
+    state.camera.error = "";
+    state.camera.errorType = "";
+    state.camera.fallbackSwipe = false;
+    state.camera.seen = false;
+    state.camera.handSeen = false;
+    state.camera.direction = "center";
+    state.camera.handDirection = "center";
+    clearCameraLock();
+  } else {
+    state.camera.fallbackSwipe = false;
+  }
+
+  state.mode = "ai";
+  state.ai.humanRole = role;
+  state.ai.thinking = false;
+  state.ai.pointerPromptedAt = 0;
+  state.scores.pointer = 0;
+  state.scores.looker = 0;
+  state.roundNumber = 1;
+  state.lastRound = null;
+  resetRound(false);
+  state.ui.menuOpen = false;
+  updateRoleUrl(role);
+}
+
+function updateRoleUrl(role) {
+  const next = new URL(window.location.href);
+  next.searchParams.set("phone", "1");
+  next.searchParams.set("mode", "ai");
+  next.searchParams.set("role", role);
+  window.history.replaceState({}, "", next);
+}
+
 function setupScreenSwipe() {
   let start = null;
 
@@ -905,8 +941,8 @@ function canUseScreenSwipe(target) {
   }
   if (state.mode === "ai") {
     if (state.ai.thinking) return false;
-    if (!state.camera.fallbackSwipe) return false;
-    return state.ai.humanRole === "pointer" || state.ai.humanRole === "looker";
+    if (state.ai.humanRole === "pointer") return true;
+    return state.camera.fallbackSwipe && state.ai.humanRole === "looker";
   }
   return false;
 }
@@ -1876,12 +1912,12 @@ function updateRuntimeClasses() {
 }
 
 function shouldShowCameraPanel() {
-  return Boolean(activeCameraRole());
+  return activeCameraRole() === "looker";
 }
 
 function activeCameraRole() {
-  if (state.mode === "online") return state.online.role;
-  if (state.mode === "ai") return state.ai.humanRole;
+  if (state.mode === "online") return state.online.role === "looker" ? "looker" : null;
+  if (state.mode === "ai") return state.ai.humanRole === "looker" ? "looker" : null;
   return null;
 }
 
@@ -1894,11 +1930,7 @@ function shouldTrackLooker() {
 }
 
 function shouldTrackPointer() {
-  return (
-    state.camera.ready &&
-    ((state.mode === "online" && state.online.ready && state.online.role === "pointer") ||
-      (state.mode === "ai" && state.ai.humanRole === "pointer"))
-  );
+  return false;
 }
 
 function isPointerGestureActive() {
@@ -1913,10 +1945,12 @@ function shouldShowPhoneControls() {
 
   if (state.mode === "online") {
     if (!state.online.roomCode || !state.online.ready || !state.online.role) return true;
+    if (state.online.role === "pointer") return false;
     return !state.camera.ready;
   }
 
   if (state.mode === "ai") {
+    if (state.ai.humanRole === "pointer") return false;
     if (state.camera.fallbackSwipe) return false;
     return !state.camera.ready;
   }
@@ -1969,37 +2003,26 @@ function modeTitle() {
     if (!state.online.connected) return "Make a room.";
     if (!state.online.roomCode) return "Create or join.";
     if (!state.online.ready) return "Waiting for player two.";
+    if (state.online.role === "pointer") return "Swipe to catch.";
     if (!state.camera.ready) return "Run It.";
-    if (state.online.role === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
     if (state.online.role === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
-    if (state.online.role === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
     if (state.online.role === "looker" && !state.camera.seen) return "Find your face.";
     if (state.online.submitted[state.online.role]) return "Locked in.";
-    return state.online.role === "looker"
-      ? "Dodge the point."
-      : state.camera.handDirection === "center"
-        ? "Point to catch them."
-        : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`;
+    return "Dodge the point.";
   }
   if (state.mode === "ai") {
+    if (state.ai.humanRole === "pointer") {
+      return state.ai.thinking ? "Computer thinking." : "Swipe to catch.";
+    }
     if (state.camera.fallbackSwipe) {
       if (state.ai.thinking) return "Locked in.";
-      if (state.ai.humanRole === "pointer") return "Swipe to catch.";
       return state.choices.pointer ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}.` : "Swipe to dodge.";
     }
     if (state.ai.thinking) return state.ai.humanRole === "looker" ? "Locked in." : "Computer thinking.";
     if (!state.camera.ready) return "Run It.";
-    if (state.ai.humanRole === "pointer" && !hasCameraTracker("pointer")) return state.camera.trackerNote || "Loading hand tracker.";
     if (state.ai.humanRole === "looker" && !hasCameraTracker("looker")) return state.camera.trackerNote || "Loading face tracker.";
-    if (state.ai.humanRole === "pointer" && !state.camera.handSeen) return "Show your pointing hand.";
     if (state.ai.humanRole === "looker" && !state.camera.seen) return "Find your face.";
-    return state.ai.humanRole === "pointer"
-      ? state.camera.handDirection === "center"
-        ? "Point to catch them."
-        : `Hold ${DIRECTION_LABELS[state.camera.handDirection]}.`
-      : state.choices.pointer
-        ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}.`
-        : "Get ready.";
+    return state.choices.pointer ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}.` : "Get ready.";
   }
   if (state.choices.pointer && !state.choices.looker) return "Looker turn.";
   if (!state.choices.pointer && state.choices.looker) return "Pointer turn.";
@@ -2102,8 +2125,9 @@ function renderOnline() {
 function onlineChoiceState() {
   if (!state.online.roomCode) return "Join a room";
   if (!state.online.ready) return "Need player two";
-  if (!state.camera.ready) return "Run It";
   if (state.online.submitted[state.online.role]) return "Locked";
+  if (state.online.role === "pointer") return "Swipe to catch";
+  if (!state.camera.ready) return "Run It";
   if (state.online.role === "looker") return "Dodge point";
   return "Point to catch";
 }
@@ -2124,19 +2148,18 @@ function renderAi() {
   els.aiHumanLabel.textContent = `You: ${DIRECTION_LABELS[state.ai.humanRole]}`;
   els.aiOpponentLabel.textContent = `CPU ${roleVerb(computerRole)}`;
   els.aiPadRole.textContent = `You ${roleVerb(state.ai.humanRole)}`;
-  els.aiChoiceState.textContent =
-    state.camera.fallbackSwipe
-      ? "Swipe practice"
-      : !state.camera.ready
-      ? "Run It"
-      : state.ai.humanRole === "looker"
-        ? state.choices.pointer
-          ? `Dodge ${DIRECTION_LABELS[state.choices.pointer]}`
-          : "Get ready"
-        : state.ai.thinking
-          ? "CPU thinking"
-          : "Point to catch";
+  els.aiChoiceState.textContent = aiChoiceState();
   els.aiPlayer.classList.toggle("is-hidden", state.ai.humanRole === "looker");
+}
+
+function aiChoiceState() {
+  if (state.ai.humanRole === "pointer") {
+    return state.ai.thinking ? "CPU thinking" : "Swipe anywhere";
+  }
+  if (state.camera.fallbackSwipe) return "Swipe practice";
+  if (!state.camera.ready) return "Run It";
+  if (state.choices.pointer) return `Dodge ${DIRECTION_LABELS[state.choices.pointer]}`;
+  return "Get ready";
 }
 
 function roleVerb(role) {

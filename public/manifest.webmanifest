@@ -2,7 +2,7 @@
   "name": "JitSwipe",
   "short_name": "JitSwipe",
   "description": "Where the real ones train.",
-  "start_url": "./?phone=1&mode=ai&role=looker",
+  "start_url": "./?phone=1&mode=ai",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
