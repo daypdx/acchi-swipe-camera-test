@@ -850,8 +850,10 @@ function setAiRole(role) {
     state.camera.direction = "center";
     state.camera.handDirection = "center";
     clearCameraLock();
+    resetAvatarMotion();
   } else {
     state.camera.fallbackSwipe = false;
+    if (!state.camera.ready) resetAvatarMotion();
   }
 
   state.mode = "ai";
@@ -1058,6 +1060,7 @@ function resetRound(resetMessage = true) {
   state.phase = "input";
   state.ai.pointerPromptedAt = 0;
   clearCameraLock();
+  syncAvatarMotion();
   if (resetMessage) state.message = "Run it back.";
 }
 
@@ -1109,6 +1112,7 @@ async function startCamera() {
     state.camera.lastSeenAt = 0;
     state.camera.lastHandSeenAt = 0;
     clearCameraLock();
+    resetAvatarMotion();
     state.ui.menuOpen = false;
     trackCamera();
     render();
@@ -1731,6 +1735,33 @@ function updateAvatarMotion(direction, dx, dy) {
   document.body.dataset.lookDirection = direction;
 }
 
+function syncAvatarMotion() {
+  if (shouldTrackLooker() && state.camera.seen) return;
+
+  if (state.phase === "reveal" && state.lastRound?.looker) {
+    setAvatarDirection(state.lastRound.looker);
+    return;
+  }
+
+  resetAvatarMotion();
+}
+
+function setAvatarDirection(direction) {
+  const [dx, dy] =
+    {
+      up: [0, -0.86],
+      right: [0.88, 0],
+      down: [0, 0.86],
+      left: [-0.88, 0],
+      center: [0, 0],
+    }[direction] || [0, 0];
+  updateAvatarMotion(direction || "center", dx, dy);
+}
+
+function resetAvatarMotion() {
+  updateAvatarMotion("center", 0, 0);
+}
+
 function drawFaceOverlay(landmarks) {
   const canvas = els.overlay;
   const rect = canvas.getBoundingClientRect();
@@ -1878,6 +1909,7 @@ function render() {
   els.arrow.dataset.dir = shownDirection || "up";
   els.arrow.classList.toggle("is-visible", Boolean(shownDirection));
 
+  syncAvatarMotion();
   updatePadStates();
   renderOnline();
   renderAi();

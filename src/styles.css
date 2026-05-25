@@ -2439,6 +2439,81 @@ body.is-phone-runtime .menu-actions svg {
   height: 19px;
 }
 
+body.is-phone-runtime.is-menu-open .controls {
+  top: calc(98px + env(safe-area-inset-top));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  width: auto;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+body.is-phone-runtime.is-menu-open .control-top {
+  min-width: 0;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body.is-phone-runtime.is-menu-open .control-title {
+  flex: 1 1 100%;
+}
+
+body.is-phone-runtime.is-menu-open .control-title strong {
+  white-space: normal;
+}
+
+body.is-phone-runtime.is-menu-open .menu-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-left: 0;
+}
+
+body.is-phone-runtime.is-menu-open .menu-actions button {
+  width: 100%;
+  min-width: 0;
+  padding: 0 5px;
+  font-size: 0.64rem;
+}
+
+body.is-phone-runtime.is-menu-open .menu-actions button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.is-phone-runtime.is-menu-open .control-body {
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.is-phone-runtime.is-menu-open .online-controls,
+body.is-phone-runtime.is-menu-open .ai-controls,
+body.is-phone-runtime.is-menu-open .camera-controls,
+body.is-phone-runtime.is-menu-open .room-panel,
+body.is-phone-runtime.is-menu-open .ai-options,
+body.is-phone-runtime.is-menu-open .room-card {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+body.is-phone-runtime.is-menu-open .role-switch {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.is-phone-runtime.is-menu-open .role-switch button {
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 0.78rem;
+}
+
 body.is-phone-runtime .ai-options {
   display: block;
 }
